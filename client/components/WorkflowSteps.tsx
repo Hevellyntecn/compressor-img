@@ -607,19 +607,7 @@ const WorkflowSteps: React.FC<WorkflowStepsProps> = ({
                     );
                   })()}
 
-                  <div className="mt-3">
-                    <p className="text-gray-300 text-sm mb-2">Configurações usadas:</p>
-                    <div className="bg-gradient-to-r from-gray-900 to-gray-800 p-4 rounded-lg border border-gray-700 shadow-sm">
-                      <div className="grid grid-cols-1 gap-3 text-sm">
-                        {Object.entries(result.data.configuration || {}).map(([k, v]) => (
-                          <div key={k} className="flex items-center justify-between">
-                            <div className="text-gray-400">{k}</div>
-                            <div className="text-white font-medium">{String(v)}</div>
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                  </div>
+                  {/* Configurações usadas ocultadas por solicitação do usuário */}
                 </div>
 
                   <div className="mt-4 flex gap-3">
