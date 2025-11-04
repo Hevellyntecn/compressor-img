@@ -29,20 +29,37 @@ router.post('/compress', uploadMiddleware, async (req, res) => {
 
     // Mantém nome original se solicitado
     const keepOriginalName = req.body.keepOriginalName === 'true';
-    let outputFileName;
     
-    if (keepOriginalName) {
-      outputFileName = req.file.originalname;
+    // Obtém formato de saída do usuário ou usa formato ótimo
+    const userFormat = req.body.format;
+    let outputFormat;
+    
+    if (userFormat && userFormat !== 'keep') {
+      // Usa o formato selecionado pelo usuário
+      outputFormat = userFormat === 'jpeg' || userFormat === 'jpg' ? 'jpeg' : 
+                     userFormat === 'png' ? 'png' : 
+                     userFormat === 'webp' ? 'webp' : 
+                     imageProcessor.getOptimalFormat(validation.format);
     } else {
-      const outputFormat = imageProcessor.getOptimalFormat(validation.format);
+      // Mantém formato original ou usa formato ótimo
+      outputFormat = keepOriginalName ? validation.format : imageProcessor.getOptimalFormat(validation.format);
+    }
+    
+    let outputFileName;
+    if (keepOriginalName) {
+      // Mantém nome mas pode mudar extensão se formato mudou
+      const originalExt = path.extname(req.file.originalname);
+      const newExt = outputFormat === 'jpeg' ? '.jpg' : `.${outputFormat}`;
+      outputFileName = path.basename(req.file.originalname, originalExt) + newExt;
+    } else {
       outputFileName = imageProcessor.generateFileName(req.file.originalname, outputFormat);
     }
     
     const outputPath = path.join(config.OUTPUT_DIR, outputFileName);
     tempFiles.push(outputPath);
 
-    // Processa a imagem
-    const result = await imageProcessor.processImage(req.file.path, outputPath);
+    // Processa a imagem com formato especificado
+    const result = await imageProcessor.processImage(req.file.path, outputPath, { format: outputFormat });
     
     // Calcula tempo de processamento
     const processingTime = Date.now() - startTime;

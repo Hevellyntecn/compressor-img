@@ -29,6 +29,11 @@ const formatBytes = (bytes: number) => {
   return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
 };
 
+const getFileNameWithoutExtension = (fileName: string) => {
+  const lastDotIndex = fileName.lastIndexOf('.');
+  return lastDotIndex !== -1 ? fileName.substring(0, lastDotIndex) : fileName;
+};
+
 const WorkflowSteps: React.FC<WorkflowStepsProps> = ({
   mode,
   onComplete,
@@ -47,6 +52,7 @@ const WorkflowSteps: React.FC<WorkflowStepsProps> = ({
   const [progress, setProgress] = useState(0);
   const [result, setResult] = useState<any>(null);
   const [downloadUrl, setDownloadUrl] = useState<string | null>(null);
+  const [customFileNames, setCustomFileNames] = useState<Record<number, string>>({});
 
   // defaults used when pages don't provide options
   const defaultCompress = { quality: 75, targetKb: 200, preserveMetadata: true, preserveAspect: true, format: 'keep' };
@@ -93,7 +99,14 @@ const WorkflowSteps: React.FC<WorkflowStepsProps> = ({
   const [formatsInfo, setFormatsInfo] = useState<any>(null);
   const [searchFormats, setSearchFormats] = useState<string>('');
   const [formatsTab, setFormatsTab] = useState<string>('Imagem');
-  const [selectedConvertFormat, setSelectedConvertFormat] = useState<string | null>(convertProps?.format ?? null);
+  const [selectedConvertFormat, setSelectedConvertFormat] = useState<string | null>(convertProps?.format ?? defaultConvert.format);
+
+  // Sync selectedConvertFormat with convertProps.format when it changes from parent
+  useEffect(() => {
+    if (convertProps?.format && convertProps.format !== selectedConvertFormat) {
+      setSelectedConvertFormat(convertProps.format);
+    }
+  }, [convertProps?.format]);
 
   // fetch supported formats for server-side validation (optional)
   useEffect(() => {
@@ -296,11 +309,26 @@ const WorkflowSteps: React.FC<WorkflowStepsProps> = ({
       let results: any[] = [];
       if (mode === 'convert') {
         try {
+          // Use selectedConvertFormat first, then convertProps.format, then default
           const outFormat = (selectedConvertFormat ?? convertProps?.format ?? defaultConvert.format).toLowerCase();
+          console.log('=== DEBUG CONVERSÃO ===');
+          console.log('selectedConvertFormat:', selectedConvertFormat);
+          console.log('convertProps?.format:', convertProps?.format);
+          console.log('defaultConvert.format:', defaultConvert.format);
+          console.log('Formato final (outFormat):', outFormat);
+          console.log('=====================');
+          
           const form = new FormData();
           // append each file under 'files' field to match server route
-          selectedFiles.forEach((f) => form.append('files', f));
+          selectedFiles.forEach((f, index) => {
+            form.append('files', f);
+            // Se houver nome personalizado para este arquivo, enviar também
+            if (customFileNames[index]) {
+              form.append(`customFileName_${index}`, customFileNames[index]);
+            }
+          });
           form.append('outputFormat', outFormat);
+          console.log('FormData outputFormat enviado:', outFormat);
           if (convertProps?.preserveName || convertProps?.preserveName === true) {
             form.append('preserveName', '1');
           }
@@ -372,51 +400,36 @@ const WorkflowSteps: React.FC<WorkflowStepsProps> = ({
     }
   };
 
-  const [showSettings, setShowSettings] = useState(false);
-
   return (
-    <div className="max-w-4xl mx-auto">
+    <div className="max-w-7xl mx-auto">
       <div className="card p-6 relative">
-        <div className="flex justify-between items-center mb-6">
+        <div className="mb-6">
           <h3 className="text-2xl font-semibold text-white">
             {mode === 'extreme' ? 'Compressão Premium' : mode === 'convert' ? 'Conversão' : 'Comprimir Imagem'}
           </h3>
-          
-          <button 
-            onClick={() => setShowSettings(!showSettings)}
-            className="relative p-2 rounded-full hover:bg-gray-700 transition-colors"
-            aria-label="Configurações"
-          >
-            <svg 
-              className="w-6 h-6 text-gray-400"
-              fill="none" 
-              stroke="currentColor" 
-              viewBox="0 0 24 24"
-            >
-              <path 
-                strokeLinecap="round" 
-                strokeLinejoin="round" 
-                strokeWidth={2} 
-                d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"
-              />
-              <path 
-                strokeLinecap="round" 
-                strokeLinejoin="round" 
-                strokeWidth={2} 
-                d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"
-              />
-            </svg>
-            {/* small badge to indicate formats available when files selected */}
-            {selectedFiles && selectedFiles.length > 0 && (
-              <span className="absolute -top-1 -right-1 w-2 h-2 bg-rose-500 rounded-full" />
-            )}
-          </button>
         </div>
 
-        {showSettings && (
-          <div className="mb-4 p-4 bg-gray-800 rounded-lg animate-fade-in">
-            {/* If convert mode, show compact format selector and preserveName toggle */}
-            {mode === 'convert' ? (
+        {/* Layout em grid - Uploader maior à esquerda (60%), Configurações à direita (40%) */}
+        <div className="grid grid-cols-1 lg:grid-cols-5 gap-6">
+          {/* Upload Area - 3 colunas (60%) */}
+          <div className="order-1 lg:col-span-3">
+            <ImageDropzone onFilesSelected={handleFilesSelected} maxSize={10 * 1024 * 1024} />
+          </div>
+
+          {/* Settings Panel - 2 colunas (40%) */}
+          <div className="order-2 lg:col-span-2">
+            <div className="h-full p-6 bg-gradient-to-br from-gray-800/80 to-gray-900/80 rounded-xl border border-gray-700/50 backdrop-blur-sm">
+              <div className="flex items-center gap-2 mb-5">
+                <div className="p-2 bg-gradient-to-r from-[#8B5CF6] to-[#EC4899] rounded-lg">
+                  <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4" />
+                  </svg>
+                </div>
+                <h4 className="text-lg font-bold text-white">Configurações</h4>
+              </div>
+
+              {/* If convert mode, show format selector */}
+              {mode === 'convert' ? (
               <div>
                 <div className="flex items-center justify-between">
                   <div>
@@ -452,7 +465,16 @@ const WorkflowSteps: React.FC<WorkflowStepsProps> = ({
                           return true;
                         })
                         .map((fmt) => (
-                          <button key={fmt.value} onClick={() => setSelectedConvertFormat(fmt.value)} className={`flex items-center justify-center gap-2 px-2 py-1 rounded-lg border transition-colors text-xs ${selectedConvertFormat === fmt.value ? 'bg-gradient-to-r from-gradient-purple to-gradient-pink text-white border-transparent shadow-glow' : 'bg-gray-800 text-gray-200 border-gray-700 hover:bg-gray-700'}`}>
+                          <button key={fmt.value} onClick={() => {
+                            console.log('Formato selecionado pelo usuário:', fmt.value);
+                            setSelectedConvertFormat(fmt.value);
+                            // Notify parent component about the format change
+                            if (onConvertOptionsChange) {
+                              const next = { ...(convertProps ?? {}), format: fmt.value };
+                              onConvertOptionsChange(next);
+                              console.log('Notificado parent com formato:', fmt.value);
+                            }
+                          }} className={`flex items-center justify-center gap-2 px-2 py-1 rounded-lg border transition-colors text-xs ${selectedConvertFormat === fmt.value ? 'bg-gradient-to-r from-gradient-purple to-gradient-pink text-white border-transparent shadow-glow' : 'bg-gray-800 text-gray-200 border-gray-700 hover:bg-gray-700'}`}>
                             {formatsTab === 'Imagem' ? <svg className="w-4 h-4 text-gray-200" /> : <svg className="w-4 h-4 text-gray-200" />}
                             <span className="font-medium">{fmt.label}</span>
                             {selectedConvertFormat === fmt.value && <CheckCircle className="w-4 h-4 text-white" />}
@@ -460,41 +482,69 @@ const WorkflowSteps: React.FC<WorkflowStepsProps> = ({
                         ))}
                     </div>
                   </div>
-
-                  <div className="mt-3 flex items-center justify-between">
-                    <label className="flex items-center gap-2 text-sm text-gray-300">
-                      <input type="checkbox" checked={convertProps?.preserveName ?? true} onChange={(e) => {
-                        const next = { ...(convertProps ?? {}), preserveName: e.target.checked };
-                        onConvertOptionsChange?.(next);
-                      }} />
-                      Preservar Nome
-                    </label>
-                    <div className="text-sm text-gray-400">Selecionado: <span className="text-white font-medium">{selectedConvertFormat ?? defaultConvert.format}</span></div>
-                  </div>
                 </div>
               </div>
             ) : (
-              // existing compress settings
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
-                  <p className="text-gray-400 mb-2">Tamanho Máximo (KB)</p>
-                  <input
-                    type="number"
-                    className="w-full p-2 bg-white text-black rounded"
-                    value={(compressProps?.targetKb ?? defaultCompress.targetKb)}
-                    onChange={(e) => {
-                      const value = Number(e.target.value || 0);
-                      const next = { ...(compressProps ?? defaultCompress), targetKb: value };
-                      onFileSelected?.(selectedFiles[0] ?? null);
-                      onFilesSelected?.(selectedFiles);
-                      onCompressOptionsChange?.(next);
-                    }}
-                  />
+              // Compress settings - Modern & Sophisticated Design
+              <div className="space-y-6">
+                {/* Tamanho Máximo */}
+                <div className="group">
+                  <div className="flex items-center justify-between mb-3">
+                    <label className="text-sm font-semibold text-gray-200 flex items-center gap-2">
+                      <svg className="w-5 h-5 text-gradient-purple" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 7v10c0 2.21 3.582 4 8 4s8-1.79 8-4V7M4 7c0 2.21 3.582 4 8 4s8-1.79 8-4M4 7c0-2.21 3.582-4 8-4s8 1.79 8 4" />
+                      </svg>
+                      Tamanho Máximo
+                    </label>
+                    <div className="px-3 py-1 bg-gradient-to-r from-[#8B5CF6]/20 to-[#EC4899]/20 rounded-full border border-[#8B5CF6]/30">
+                      <span className="text-sm font-bold text-white">{compressProps?.targetKb ?? defaultCompress.targetKb} KB</span>
+                    </div>
+                  </div>
+                  <div className="relative">
+                    <input
+                      type="number"
+                      min="50"
+                      max="5000"
+                      step="10"
+                      className="w-full px-4 py-3 bg-gradient-to-r from-gray-800 to-gray-900 text-white rounded-xl border-2 border-gray-700 focus:border-[#8B5CF6] focus:outline-none transition-all duration-300 font-medium text-lg shadow-inner group-hover:border-gray-600"
+                      value={(compressProps?.targetKb ?? defaultCompress.targetKb)}
+                      onChange={(e) => {
+                        const value = Number(e.target.value || 0);
+                        const next = { ...(compressProps ?? defaultCompress), targetKb: value };
+                        onFileSelected?.(selectedFiles[0] ?? null);
+                        onFilesSelected?.(selectedFiles);
+                        onCompressOptionsChange?.(next);
+                      }}
+                      placeholder="200"
+                    />
+                    <div className="absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none">
+                      <span className="text-gray-500 font-medium">KB</span>
+                    </div>
+                  </div>
+                  <p className="mt-2 text-xs text-gray-400 flex items-center gap-1">
+                    <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
+                      <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd" />
+                    </svg>
+                    Define o tamanho alvo do arquivo comprimido
+                  </p>
                 </div>
 
-                <div>
-                  <p className="text-gray-400 mb-2">Qualidade (%)</p>
-                  <div className="flex items-center gap-4">
+                {/* Qualidade */}
+                <div className="group">
+                  <div className="flex items-center justify-between mb-3">
+                    <label className="text-sm font-semibold text-gray-200 flex items-center gap-2">
+                      <svg className="w-5 h-5 text-gradient-pink" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                      </svg>
+                      Qualidade
+                    </label>
+                    <div className="px-3 py-1 bg-gradient-to-r from-[#EC4899]/20 to-[#8B5CF6]/20 rounded-full border border-[#EC4899]/30">
+                      <span className="text-sm font-bold text-white">{compressProps?.quality ?? defaultCompress.quality}%</span>
+                    </div>
+                  </div>
+                  
+                  {/* Custom Range Slider */}
+                  <div className="relative pt-2 pb-4">
                     <input
                       type="range"
                       min={1}
@@ -505,56 +555,42 @@ const WorkflowSteps: React.FC<WorkflowStepsProps> = ({
                         const next = { ...(compressProps ?? defaultCompress), quality: value };
                         onCompressOptionsChange?.(next);
                       }}
-                      className="w-full"
+                      className="w-full h-3 bg-gradient-to-r from-gray-800 to-gray-900 rounded-full appearance-none cursor-pointer slider-thumb"
+                      style={{
+                        background: `linear-gradient(to right, #8B5CF6 0%, #EC4899 ${compressProps?.quality ?? defaultCompress.quality}%, rgb(31 41 55) ${compressProps?.quality ?? defaultCompress.quality}%, rgb(17 24 39) 100%)`
+                      }}
                     />
-                    <div className="w-14 text-right text-white">{compressProps?.quality ?? defaultCompress.quality}%</div>
+                    
+                    {/* Quality markers */}
+                    <div className="flex justify-between mt-2 px-1">
+                      <span className="text-xs text-gray-500">Baixa</span>
+                      <span className="text-xs text-gray-400">Média</span>
+                      <span className="text-xs text-gray-300">Alta</span>
+                    </div>
                   </div>
-                </div>
-
-                <div>
-                  <p className="text-gray-400 mb-2">Formato de Saída</p>
-                  <select
-                    className="w-full p-2 bg-white text-black rounded"
-                    value={(compressProps?.format ?? defaultCompress.format)}
-                    onChange={(e) => {
-                      const value = e.target.value;
-                      const next = { ...(compressProps ?? defaultCompress), format: value };
-                      onCompressOptionsChange?.(next);
-                    }}
-                  >
-                    <option value="keep">Manter</option>
-                    <option value="jpeg">JPEG</option>
-                    <option value="png">PNG</option>
-                    <option value="webp">WEBP</option>
-                  </select>
-                </div>
-
-                <div className="flex items-center">
-                  <input
-                    id="preserveAspect"
-                    type="checkbox"
-                    checked={compressProps?.preserveAspect ?? defaultCompress.preserveAspect}
-                    onChange={(e) => {
-                      const next = { ...(compressProps ?? defaultCompress), preserveAspect: e.target.checked };
-                      onCompressOptionsChange?.(next);
-                    }}
-                    className="mr-2"
-                  />
-                  <label htmlFor="preserveAspect" className="text-gray-400">Manter proporção</label>
+                  
+                  <p className="mt-2 text-xs text-gray-400 flex items-center gap-1">
+                    <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
+                      <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd" />
+                    </svg>
+                    Maior qualidade pode resultar em arquivo maior
+                  </p>
                 </div>
               </div>
             )}
+            </div>
           </div>
-        )}
+        </div>
 
-        <ImageDropzone onFilesSelected={handleFilesSelected} maxSize={10 * 1024 * 1024} />
-
+        {/* File info and actions - Full width below */}
         {selectedFiles.length > 0 && !result && (
           <div className="mt-4 space-y-4">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-white font-medium">{selectedFiles.length === 1 ? selectedFiles[0].name : `${selectedFiles.length} arquivos selecionados`}</p>
-                <p className="text-gray-400 text-sm">Tamanho: {selectedFiles.length === 1 ? formatBytes(selectedFiles[0].size) : formatBytes(selectedFiles.reduce((s, f) => s + f.size, 0))}</p>
+            <div className="space-y-3">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-white font-medium">{selectedFiles.length === 1 ? selectedFiles[0].name : `${selectedFiles.length} arquivos selecionados`}</p>
+                  <p className="text-gray-400 text-sm">Tamanho: {selectedFiles.length === 1 ? formatBytes(selectedFiles[0].size) : formatBytes(selectedFiles.reduce((s, f) => s + f.size, 0))}</p>
+                </div>
               </div>
             </div>
 
@@ -614,15 +650,40 @@ const WorkflowSteps: React.FC<WorkflowStepsProps> = ({
                     <button onClick={async () => {
                       // handle download
                       try {
-                        // if we have a processed file blob/url in a real app, use it. Here fallback to selectedFile
-                        // if multiple items, download them sequentially
                         const items = result?.data?.items ?? [];
+                        
+                        // Se estamos no modo convert e temos downloadUrl do servidor
+                        if (mode === 'convert' && items.length > 0) {
+                          for (const it of items) {
+                            // Primeiro tenta baixar do servidor via downloadUrl
+                            if (it.processedFile?.downloadUrl) {
+                              const a = document.createElement('a');
+                              a.href = it.processedFile.downloadUrl;
+                              a.download = it.processedFile.name ?? it.originalFile?.name ?? 'download';
+                              document.body.appendChild(a);
+                              a.click();
+                              a.remove();
+                            } else if (it.processedBlob instanceof Blob) {
+                              // Fallback para blob local se existir
+                              const url = URL.createObjectURL(it.processedBlob);
+                              const a = document.createElement('a');
+                              a.href = url;
+                              a.download = it.processedFile?.name ?? it.originalFile?.name ?? 'download';
+                              document.body.appendChild(a);
+                              a.click();
+                              a.remove();
+                              URL.revokeObjectURL(url);
+                            }
+                          }
+                          return;
+                        }
+                        
+                        // Para compress/extreme mode - usa blob local
                         if (items.length > 0) {
                           for (const it of items) {
                             const b = it.processedBlob instanceof Blob ? it.processedBlob : null;
-                            const srcBlob = b ?? null;
-                            if (!srcBlob) continue;
-                            const url = URL.createObjectURL(srcBlob);
+                            if (!b) continue;
+                            const url = URL.createObjectURL(b);
                             const a = document.createElement('a');
                             a.href = url;
                             a.download = it.processedFile?.name ?? it.originalFile?.name ?? 'download';

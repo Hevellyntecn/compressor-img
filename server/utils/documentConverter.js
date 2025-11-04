@@ -11,8 +11,8 @@ const archiver = require('archiver');
 class DocumentConverter {
   constructor() {
     this.supportedFormats = {
-      input: ['jpg', 'jpeg', 'png', 'webp', 'bmp', 'tiff', 'pdf', 'docx', 'xlsx', 'xml', 'html'],
-      output: ['jpg', 'jpeg', 'png', 'webp', 'pdf', 'docx', 'xlsx', 'xml', 'html']
+      input: ['jpg', 'jpeg', 'png', 'webp', 'bmp', 'tiff', 'gif', 'svg', 'pdf', 'docx', 'xlsx', 'xml', 'html'],
+      output: ['jpg', 'jpeg', 'png', 'webp', 'bmp', 'tiff', 'gif', 'svg', 'pdf', 'docx', 'xlsx', 'xml', 'html']
     };
   }
 
@@ -20,38 +20,51 @@ class DocumentConverter {
    * Converte um documento para o formato especificado
    * @param {string} inputPath - Caminho do arquivo de entrada
    * @param {string} outputFormat - Formato de saída desejado
-   * @param {Object} options - Opções de conversão
+   * @param {Object} options - Opções de conversão (pode incluir customFileName)
    * @returns {Promise<Object>} Resultado da conversão
    */
   async convertDocument(inputPath, outputFormat, options = {}) {
     try {
       const inputExt = path.extname(inputPath).toLowerCase().slice(1);
-      const originalName = path.basename(inputPath, path.extname(inputPath));
+      const defaultName = path.basename(inputPath, path.extname(inputPath));
+      // Usa nome personalizado se fornecido, caso contrário usa o nome original
+      const originalName = options.customFileName || defaultName;
       
       // Valida formato de entrada
       if (!this.supportedFormats.input.includes(inputExt)) {
         throw new Error(`Formato de entrada não suportado: ${inputExt}`);
       }
 
+      // Normaliza formato de saída (jpg e jpeg são iguais)
+      let normalizedOutputFormat = outputFormat.toLowerCase();
+      if (normalizedOutputFormat === 'jpg') {
+        normalizedOutputFormat = 'jpeg';
+      }
+      
+      console.log(`ConvertDocument: input=${inputExt}, output=${outputFormat}, normalized=${normalizedOutputFormat}`);
+      
       // Valida formato de saída
-      if (!this.supportedFormats.output.includes(outputFormat.toLowerCase())) {
+      if (!this.supportedFormats.output.includes(normalizedOutputFormat) && !this.supportedFormats.output.includes(outputFormat.toLowerCase())) {
         throw new Error(`Formato de saída não suportado: ${outputFormat}`);
       }
 
       // Se entrada e saída são iguais, apenas otimiza
-      if (inputExt === outputFormat.toLowerCase()) {
-        return await this.optimizeSameFormat(inputPath, outputFormat, options);
+      if (inputExt === normalizedOutputFormat || (inputExt === 'jpg' && normalizedOutputFormat === 'jpeg') || (inputExt === 'jpeg' && normalizedOutputFormat === 'jpg')) {
+        return await this.optimizeSameFormat(inputPath, normalizedOutputFormat, options);
       }
 
       // Chama conversor específico baseado no tipo
-      const result = await this.performConversion(inputPath, outputFormat, options);
+      const result = await this.performConversion(inputPath, normalizedOutputFormat, options);
+      
+      // Use o formato original do usuário para a extensão do arquivo (webp, jpg, png, etc.)
+      const outputExtension = outputFormat.toLowerCase();
       
       return {
         success: true,
         originalFormat: inputExt,
-        outputFormat: outputFormat.toLowerCase(),
+        outputFormat: outputExtension,
         originalName: `${originalName}.${inputExt}`,
-        outputName: `${originalName}.${outputFormat.toLowerCase()}`,
+        outputName: `${originalName}.${outputExtension}`,
         outputPath: result.path,
         size: result.size,
         metadata: result.metadata
@@ -91,14 +104,30 @@ class DocumentConverter {
    */
   async performConversion(inputPath, outputFormat, options) {
     const inputExt = path.extname(inputPath).toLowerCase().slice(1);
-    const originalName = path.basename(inputPath, path.extname(inputPath));
-    const outputPath = path.join(options.outputDir, `${originalName}.${outputFormat}`);
+    const defaultName = path.basename(inputPath, path.extname(inputPath));
+    // Usa nome personalizado se fornecido, caso contrário usa o nome original
+    const originalName = options.customFileName || defaultName;
+    
+    // Normaliza o formato de saída (jpg e jpeg são iguais para sharp)
+    let normalizedOutputFormat = outputFormat.toLowerCase();
+    if (normalizedOutputFormat === 'jpg') {
+      normalizedOutputFormat = 'jpeg';
+    }
+    
+    // Usa o formato original para a extensão do arquivo
+    const fileExtension = outputFormat.toLowerCase();
+    const outputPath = path.join(options.outputDir, `${originalName}.${fileExtension}`);
+    
+    console.log(`PerformConversion: outputPath=${outputPath}, format=${normalizedOutputFormat}`);
 
     // Conversões de imagem
-    if (['jpg', 'jpeg', 'png', 'webp', 'bmp', 'tiff'].includes(inputExt)) {
-      if (['jpg', 'jpeg', 'png', 'webp', 'bmp', 'tiff'].includes(outputFormat)) {
-        return await this.convertImage(inputPath, outputPath, outputFormat, options);
-      } else if (outputFormat === 'pdf') {
+    const imageFormats = ['jpg', 'jpeg', 'png', 'webp', 'bmp', 'tiff', 'gif', 'svg'];
+    const normalizedOutput = normalizedOutputFormat;
+    
+    if (imageFormats.includes(inputExt)) {
+      if (imageFormats.includes(normalizedOutput) || (normalizedOutput === 'jpeg' && imageFormats.includes('jpg')) || (normalizedOutput === 'jpg' && imageFormats.includes('jpeg'))) {
+        return await this.convertImage(inputPath, outputPath, normalizedOutput, options);
+      } else if (normalizedOutput === 'pdf') {
         return await this.imageToPDF(inputPath, outputPath, options);
       }
     }
@@ -134,27 +163,51 @@ class DocumentConverter {
    * Converte imagem para outro formato
    */
   async convertImage(inputPath, outputPath, outputFormat, options) {
+    const inputExt = path.extname(inputPath).toLowerCase().slice(1);
+    
+    // SVG não pode ser convertido diretamente com sharp
+    if (inputExt === 'svg' || outputFormat === 'svg') {
+      if (inputExt === 'svg' && outputFormat !== 'svg') {
+        throw new Error('Conversão de SVG para outros formatos requer tratamento especial');
+      }
+      if (outputFormat === 'svg' && inputExt !== 'svg') {
+        throw new Error('Conversão para SVG não é suportada diretamente');
+      }
+      // Se ambos são SVG, apenas copia
+      await fs.copy(inputPath, outputPath);
+      const stats = await fs.stat(outputPath);
+      return {
+        path: outputPath,
+        size: stats.size,
+        metadata: { format: 'svg' }
+      };
+    }
+    
     let pipeline = sharp(inputPath);
 
+    // Normaliza jpg para jpeg para processamento interno do sharp
+    const normalizedFormat = outputFormat === 'jpg' ? 'jpeg' : outputFormat;
+    
+    console.log(`Convertendo imagem: entrada=${inputExt}, saída=${outputFormat}, normalizado=${normalizedFormat}`);
+
     // Configurações específicas por formato
-    switch (outputFormat) {
-      case 'jpg':
+    switch (normalizedFormat) {
       case 'jpeg':
         pipeline = pipeline.jpeg({ 
-          quality: options.quality || 95,
+          quality: options.quality || 100,
           progressive: true,
           mozjpeg: true
         });
         break;
       case 'png':
         pipeline = pipeline.png({ 
-          quality: options.quality || 95,
+          quality: options.quality || 100,
           compressionLevel: 9
         });
         break;
       case 'webp':
         pipeline = pipeline.webp({ 
-          quality: options.quality || 90,
+          quality: options.quality || 100,
           effort: 6
         });
         break;
@@ -163,10 +216,16 @@ class DocumentConverter {
         break;
       case 'tiff':
         pipeline = pipeline.tiff({ 
-          quality: options.quality || 95,
+          quality: options.quality || 100,
           compression: 'lzw'
         });
         break;
+      case 'gif':
+        // GIF não suporta qualidade, apenas converte
+        pipeline = pipeline.gif();
+        break;
+      default:
+        throw new Error(`Formato de saída não suportado: ${outputFormat}`);
     }
 
     // Aplica redimensionamento se especificado

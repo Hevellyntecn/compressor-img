@@ -18,7 +18,7 @@
   }
   
   .btn-primary {
-    @apply bg-gradient-to-r from-gradient-purple to-gradient-pink text-white hover:from-gradient-purple hover:to-gradient-orange focus:ring-gradient-purple shadow-lg hover:shadow-xl transition-all duration-300;
+    @apply bg-gradient-to-r from-[#8B5CF6] to-[#EC4899] text-white hover:from-[#8B5CF6] hover:to-[#F97316] focus:ring-[#8B5CF6] shadow-lg hover:shadow-xl transition-all duration-300;
   }
   
   .btn-secondary {
@@ -52,7 +52,7 @@
 
 @layer utilities {
   .text-gradient {
-    @apply bg-gradient-to-r from-gradient-purple via-gradient-pink to-gradient-orange bg-clip-text text-transparent;
+    @apply bg-gradient-to-r from-[#8B5CF6] via-[#EC4899] to-[#F97316] bg-clip-text text-transparent;
   }
   
   .shadow-soft {
@@ -123,4 +123,136 @@
 
 .animate-fade-in {
   animation: fadeIn 0.3s ease-out forwards;
+}
+
+/* Slider styles */
+input[type="range"].slider {
+  -webkit-appearance: none;
+  appearance: none;
+  height: 8px;
+  border-radius: 4px;
+  outline: none;
+}
+
+input[type="range"].slider::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, rgb(139, 92, 246), rgb(236, 72, 153));
+  cursor: pointer;
+  box-shadow: 0 2px 8px rgba(139, 92, 246, 0.4);
+  transition: all 0.2s ease;
+}
+
+input[type="range"].slider::-webkit-slider-thumb:hover {
+  transform: scale(1.1);
+  box-shadow: 0 4px 12px rgba(139, 92, 246, 0.6);
+}
+
+input[type="range"].slider::-moz-range-thumb {
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, rgb(139, 92, 246), rgb(236, 72, 153));
+  cursor: pointer;
+  border: none;
+  box-shadow: 0 2px 8px rgba(139, 92, 246, 0.4);
+  transition: all 0.2s ease;
+}
+
+input[type="range"].slider::-moz-range-thumb:hover {
+  transform: scale(1.1);
+  box-shadow: 0 4px 12px rgba(139, 92, 246, 0.6);
+}
+
+/* Modern slider thumb for quality control */
+input[type="range"].slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  height: 12px;
+  border-radius: 6px;
+  outline: none;
+  transition: all 0.3s ease;
+}
+
+input[type="range"].slider-thumb::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #8B5CF6, #EC4899);
+  cursor: pointer;
+  box-shadow: 0 0 0 4px rgba(139, 92, 246, 0.1), 0 4px 12px rgba(139, 92, 246, 0.4);
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  border: 3px solid white;
+}
+
+input[type="range"].slider-thumb::-webkit-slider-thumb:hover {
+  transform: scale(1.15);
+  box-shadow: 0 0 0 6px rgba(139, 92, 246, 0.15), 0 6px 16px rgba(139, 92, 246, 0.5);
+}
+
+input[type="range"].slider-thumb::-webkit-slider-thumb:active {
+  transform: scale(1.05);
+  box-shadow: 0 0 0 8px rgba(139, 92, 246, 0.2), 0 2px 8px rgba(139, 92, 246, 0.6);
+}
+
+input[type="range"].slider-thumb::-moz-range-thumb {
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #8B5CF6, #EC4899);
+  cursor: pointer;
+  border: 3px solid white;
+  box-shadow: 0 0 0 4px rgba(139, 92, 246, 0.1), 0 4px 12px rgba(139, 92, 246, 0.4);
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+input[type="range"].slider-thumb::-moz-range-thumb:hover {
+  transform: scale(1.15);
+  box-shadow: 0 0 0 6px rgba(139, 92, 246, 0.15), 0 6px 16px rgba(139, 92, 246, 0.5);
+}
+
+input[type="range"].slider-thumb::-moz-range-thumb:active {
+  transform: scale(1.05);
+  box-shadow: 0 0 0 8px rgba(139, 92, 246, 0.2), 0 2px 8px rgba(139, 92, 246, 0.6);
+}
+
+/* Scrollbar hide utility */
+.scrollbar-hide {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+.scrollbar-hide::-webkit-scrollbar {
+  display: none;
+}
+
+/* Hover scale utility */
+.hover\:scale-102:hover {
+  transform: scale(1.02);
+}
+
+/* Checkbox styles */
+input[type="checkbox"] {
+  accent-color: rgb(139, 92, 246);
+}
+
+/* Select dropdown styles */
+select {
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%23ffffff' d='M6 9L1 4h10z'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 0.75rem center;
+  background-size: 12px;
+  padding-right: 2.5rem;
+  -webkit-appearance: none;
+  -moz-appearance: none;
+  appearance: none;
+}
+
+select::-ms-expand {
+  display: none;
 }

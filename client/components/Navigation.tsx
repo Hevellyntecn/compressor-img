@@ -27,6 +27,12 @@ const Navigation: React.FC = () => {
       href: '/converter',
       icon: FileText,
       description: 'Converter documentos'
+    },
+    {
+      name: 'Configurações',
+      href: '/settings',
+      icon: Settings,
+      description: 'Configurar formatos padrão'
     }
   ];
 
@@ -50,13 +56,13 @@ const Navigation: React.FC = () => {
                   className={`
                     relative px-4 py-2 rounded-lg transition-all duration-300 group
                     ${isActive 
-                      ? 'bg-gradient-to-r from-gradient-purple/20 to-gradient-pink/20 text-white shadow-glow' 
+                      ? 'bg-gradient-to-r from-[#8B5CF6]/20 to-[#EC4899]/20 text-white shadow-glow' 
                       : 'text-gray-300 hover:text-white hover:bg-gray-700/50'
                     }
                   `}
                 >
                   <div className="flex items-center space-x-2">
-                    <Icon className={`w-4 h-4 ${isActive ? 'text-gradient-pink' : ''}`} />
+                    <Icon className={`w-4 h-4 ${isActive ? 'text-[#EC4899]' : ''}`} />
                     <span className="font-medium">{item.name}</span>
                   </div>
                   
@@ -96,7 +102,7 @@ const Navigation: React.FC = () => {
                   className={`
                     flex items-center space-x-2 px-4 py-3 rounded-lg transition-all duration-300
                     ${isActive 
-                      ? 'bg-gradient-to-r from-gradient-purple/20 to-gradient-pink/20 text-white' 
+                      ? 'bg-gradient-to-r from-[#8B5CF6]/20 to-[#EC4899]/20 text-white' 
                       : 'text-gray-300 hover:text-white hover:bg-gray-700/50'
                     }
                   `}

@@ -26,7 +26,7 @@ const ProgressBar: React.FC<ProgressBarProps> = ({
     if (step.status === 'completed') {
       return <CheckCircle className="w-5 h-5 text-green-500" />;
     } else if (step.status === 'active') {
-      return <Loader2 className="w-5 h-5 text-gradient-pink animate-spin" />;
+      return <Loader2 className="w-5 h-5 text-[#EC4899] animate-spin" />;
     } else {
       return <Clock className="w-5 h-5 text-gray-500" />;
     }
@@ -38,7 +38,7 @@ const ProgressBar: React.FC<ProgressBarProps> = ({
     if (step.status === 'completed') {
       return `${baseClasses} bg-green-500/10 border border-green-500/20`;
     } else if (step.status === 'active') {
-      return `${baseClasses} bg-gradient-to-r from-gradient-purple/10 to-gradient-pink/10 border border-gradient-purple/30 shadow-glow`;
+      return `${baseClasses} bg-gradient-to-r from-[#8B5CF6]/10 to-[#EC4899]/10 border border-[#8B5CF6]/30 shadow-glow`;
     } else {
       return `${baseClasses} bg-gray-800/30 border border-gray-700/50`;
     }
@@ -76,7 +76,7 @@ const ProgressBar: React.FC<ProgressBarProps> = ({
           {/* Indicador de progresso */}
           {step.status === 'active' && (
             <div className="flex-shrink-0">
-              <div className="w-8 h-8 rounded-full bg-gradient-to-r from-gradient-purple to-gradient-pink flex items-center justify-center">
+              <div className="w-8 h-8 rounded-full bg-gradient-to-r from-[#8B5CF6] to-[#EC4899] flex items-center justify-center">
                 <div className="w-2 h-2 bg-white rounded-full animate-pulse"></div>
               </div>
             </div>

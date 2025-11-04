@@ -1,23 +1,6 @@
 {
-  "version": 2,
-  "builds": [
-    { "src": "client/package.json", "use": "@vercel/next" },
-    { "src": "api/[...server].js", "use": "@vercel/node" }
-  ],
-  "routes": [
-    { "src": "/api/(.*)", "dest": "/api/[...server].js" }
-  ],
-  "env": {
-    "NODE_ENV": "production",
-    "MAX_FILE_SIZE": "10485760",
-    "UPLOAD_DIR": "/tmp/uploads",
-    "OUTPUT_DIR": "/tmp/compressed",
-    "ALLOWED_FORMATS": "jpg,jpeg,png,webp,bmp,tiff"
-  },
-  "functions": {
-    "api/[...server].js": {
-      "maxDuration": 60,
-      "memory": 1024
-    }
-  }
+  "buildCommand": "cd client && npm install && npm run build",
+  "outputDirectory": "client/.next",
+  "framework": "nextjs",
+  "installCommand": "cd client && npm install"
 }

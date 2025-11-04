@@ -24,11 +24,11 @@ class ImageProcessor {
       
       // Se já está dentro do limite, apenas otimiza
       if (originalSize <= this.targetSize) {
-        return await this.optimizeImage(inputPath, outputPath, metadata, originalSize);
+        return await this.optimizeImage(inputPath, outputPath, metadata, originalSize, options.format);
       }
 
       // Caso contrário, aplica compressão inteligente
-      return await this.intelligentCompression(inputPath, outputPath, metadata, originalSize);
+      return await this.intelligentCompression(inputPath, outputPath, metadata, originalSize, options.format);
     } catch (error) {
       throw new Error(`Erro ao processar imagem: ${error.message}`);
     }
@@ -101,26 +101,28 @@ class ImageProcessor {
   /**
    * Otimiza uma imagem que já está dentro do limite de tamanho
    */
-  async optimizeImage(inputPath, outputPath, metadata, originalSize) {
-    const format = this.getOptimalFormat(metadata.format);
+  async optimizeImage(inputPath, outputPath, metadata, originalSize, userFormat = null) {
+    // Usa o formato especificado pelo usuário ou determina o ótimo
+    const format = userFormat || this.getOptimalFormat(metadata.format);
     
     let pipeline = sharp(inputPath);
     
-    if (format === 'jpeg') {
+    if (format === 'jpeg' || format === 'jpg') {
       pipeline = pipeline.jpeg({ 
-        quality: 90, 
+        quality: 100, 
         progressive: true,
         mozjpeg: true 
       });
     } else if (format === 'png') {
       pipeline = pipeline.png({ 
-        quality: 90,
+        quality: 100,
         compressionLevel: 9,
-        adaptiveFiltering: true
+        adaptiveFiltering: true,
+        force: true
       });
     } else if (format === 'webp') {
       pipeline = pipeline.webp({ 
-        quality: 85,
+        quality: 100,
         effort: 6
       });
     }
@@ -134,7 +136,7 @@ class ImageProcessor {
       originalSize,
       compressedSize: newSize,
       compressionRatio: ((originalSize - newSize) / originalSize * 100).toFixed(2),
-      format: format,
+      format: format === 'jpg' ? 'jpeg' : format,
       dimensions: `${metadata.width}x${metadata.height}`,
       path: outputPath
     };
@@ -143,8 +145,9 @@ class ImageProcessor {
   /**
    * Aplica compressão inteligente para atingir o tamanho alvo
    */
-  async intelligentCompression(inputPath, outputPath, metadata, originalSize) {
-    const format = this.getOptimalFormat(metadata.format);
+  async intelligentCompression(inputPath, outputPath, metadata, originalSize, userFormat = null) {
+    // Usa o formato especificado pelo usuário ou determina o ótimo
+    const format = userFormat || this.getOptimalFormat(metadata.format);
     const qualitySteps = format === 'webp' ? this.webpQualitySteps : this.qualitySteps;
     
     let bestResult = null;

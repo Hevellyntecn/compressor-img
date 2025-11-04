@@ -166,10 +166,6 @@ export default function ConverterPage() {
             convertOptions={{ format: selectedFormat, preserveName }}
             onFilesSelected={handleFilesSelectedFromWorkflow}
           />
-
-          <div className="mt-4 text-gray-300">
-            Envie um arquivo acima. Para escolher o formato de saída, clique no ícone de configurações (⚙) no canto do card de conversão — todas as opções de formato estarão lá.
-          </div>
         </div>
 
         {/* Conversion workflow is shown above (uploader). */}

@@ -47,7 +47,7 @@ router.post('/convert', uploadMiddleware, async (req, res) => {
     // Opções de conversão
     const options = {
       outputDir: config.OUTPUT_DIR,
-      quality: parseInt(req.body.quality) || 95,
+      quality: parseInt(req.body.quality) || 100,
       width: req.body.width ? parseInt(req.body.width) : undefined,
       height: req.body.height ? parseInt(req.body.height) : undefined,
       fit: req.body.fit || 'inside'
@@ -124,6 +124,8 @@ router.post('/convert-multiple', uploadMiddleware.upload.array('files', 10), asy
 
   const outputFormat = req.body.outputFormat;
   
+  console.log('Convert-multiple: outputFormat recebido =', outputFormat);
+  
   if (!outputFormat) {
     return res.status(400).json({
       success: false,
@@ -135,9 +137,12 @@ router.post('/convert-multiple', uploadMiddleware.upload.array('files', 10), asy
   const errors = [];
 
   // Processa cada arquivo
-  for (const file of req.files) {
+  for (let i = 0; i < req.files.length; i++) {
+    const file = req.files[i];
     try {
       const inputExt = path.extname(file.originalname).toLowerCase().slice(1);
+      
+      console.log(`Processando arquivo: ${file.originalname}, formato entrada: ${inputExt}, formato saída: ${outputFormat}`);
       
       if (!documentConverter.isConversionSupported(inputExt, outputFormat)) {
         errors.push({
@@ -148,16 +153,22 @@ router.post('/convert-multiple', uploadMiddleware.upload.array('files', 10), asy
         continue;
       }
 
-      const originalName = path.basename(file.originalname, path.extname(file.originalname));
-      const outputFileName = `${originalName}.${outputFormat.toLowerCase()}`;
-      const outputPath = path.join(config.OUTPUT_DIR, outputFileName);
+      // Verifica se há nome personalizado para este arquivo
+      const customFileName = req.body[`customFileName_${i}`];
+      // Se não houver nome personalizado, usa o nome original do arquivo (sem extensão)
+      const baseFileName = customFileName || path.basename(file.originalname, path.extname(file.originalname));
+      
+      console.log(`Nome base do arquivo: ${baseFileName}${customFileName ? ' (personalizado)' : ' (original)'}`);
 
       const options = {
         outputDir: config.OUTPUT_DIR,
-        quality: parseInt(req.body.quality) || 95
+        quality: parseInt(req.body.quality) || 100,
+        customFileName: baseFileName // Passa sempre o nome (personalizado ou original)
       };
 
       const result = await documentConverter.convertDocument(file.path, outputFormat, options);
+      
+      console.log(`Conversão bem-sucedida: ${result.outputName}`);
       
       results.push({
         originalFile: {
@@ -261,6 +272,39 @@ router.get('/validate-conversion', (req, res) => {
       supported: isSupported
     }
   });
+});
+
+/**
+ * GET /api/download/:filename
+ * Download de arquivo convertido
+ */
+router.get('/download/:filename', async (req, res) => {
+  try {
+    const filename = req.params.filename;
+    const filePath = path.join(config.OUTPUT_DIR, filename);
+
+    // Verifica se o arquivo existe
+    if (!await fs.pathExists(filePath)) {
+      return res.status(404).json({
+        success: false,
+        error: 'Arquivo não encontrado'
+      });
+    }
+
+    // Define headers para download
+    res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
+    res.setHeader('Content-Type', 'application/octet-stream');
+
+    // Envia o arquivo
+    res.sendFile(path.resolve(filePath));
+
+  } catch (error) {
+    console.error('Erro no download:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Erro ao fazer download do arquivo'
+    });
+  }
 });
 
 module.exports = router;

@@ -112,10 +112,10 @@ const ImageDropzone: React.FC<ImageDropzoneProps> = ({
       <div
         {...getRootProps()}
         className={`
-          relative border-2 border-dashed rounded-xl p-8 text-center cursor-pointer transition-all duration-200
+          relative border-2 border-dashed rounded-xl p-12 text-center cursor-pointer transition-all duration-300
           ${isDragActive || dragActive
-            ? 'border-primary-400 bg-primary-50 scale-[1.02]'
-            : 'border-gray-300 hover:border-primary-400 hover:bg-gray-50'
+            ? 'border-[#8B5CF6] bg-gradient-to-br from-[#8B5CF6]/10 to-[#EC4899]/10 scale-[1.02] shadow-glow'
+            : 'border-gray-700 hover:border-gray-600 hover:bg-gray-800/30'
           }
           ${disabled ? 'opacity-50 cursor-not-allowed' : ''}
         `}
@@ -128,25 +128,25 @@ const ImageDropzone: React.FC<ImageDropzoneProps> = ({
       >
         <input {...getInputProps()} />
 
-        <div className="flex flex-col items-center space-y-4">
+        <div className="flex flex-col items-center space-y-6">
           <div className={`
-            p-4 rounded-full transition-colors duration-200
+            p-6 rounded-full transition-all duration-300
             ${isDragActive || dragActive
-              ? 'bg-primary-100 text-primary-600'
-              : 'bg-gray-100 text-gray-400'
+              ? 'bg-gradient-to-r from-[#8B5CF6] to-[#EC4899] text-white shadow-glow scale-110'
+              : 'bg-gray-900 text-gray-400 border-2 border-gray-700'
             }
           `}>
             {isDragActive || dragActive ? (
-              <Upload className="w-8 h-8" />
+              <Upload className="w-10 h-10" />
             ) : (
-              <Image className="w-8 h-8" />
+              <Image className="w-10 h-10" />
             )}
           </div>
 
-          <div className="space-y-2">
+          <div className="space-y-3">
             <h3 className={`
-              text-lg font-semibold transition-colors duration-200
-              ${isDragActive || dragActive ? 'text-primary-600' : 'text-gray-700'}
+              text-xl font-bold transition-colors duration-200
+              ${isDragActive || dragActive ? 'text-white' : 'text-white'}
             `}>
               {isDragActive || dragActive
                 ? 'Solte as imagens aqui'
@@ -154,65 +154,71 @@ const ImageDropzone: React.FC<ImageDropzoneProps> = ({
               }
             </h3>
 
-            <p className="text-gray-500 text-sm">
-              ou <span className="text-primary-600 font-medium">clique para selecionar</span>
+            <p className="text-gray-400 text-sm">
+              ou <span className="text-[#8B5CF6] font-semibold bg-gradient-to-r from-[#8B5CF6] to-[#EC4899] bg-clip-text text-transparent">clique para selecionar</span>
             </p>
-            <p className="text-xs text-gray-400">Dica: segure Ctrl/Cmd ou Shift para selecionar múltiplos arquivos, ou arraste vários arquivos ao mesmo tempo.</p>
+            <p className="text-xs text-gray-500">Dica: segure Ctrl/Cmd ou Shift para selecionar múltiplos arquivos, ou arraste vários arquivos ao mesmo tempo.</p>
           </div>
 
-          <div className="text-xs text-gray-400 space-y-1">
-            <p>Formatos suportados: JPEG, PNG, WEBP, BMP, TIFF</p>
-            <p>Tamanho máximo: {formatFileSize(maxSize)}</p>
+          <div className="text-xs text-gray-400 space-y-1 bg-gray-900/50 px-4 py-2 rounded-lg border border-gray-700/50">
+            <p>📁 Formatos suportados: <span className="text-white font-medium">JPEG, PNG, WEBP, BMP, TIFF</span></p>
+            <p>📏 Tamanho máximo: <span className="text-white font-medium">{formatFileSize(maxSize)}</span></p>
           </div>
         </div>
       </div>
 
       {/* Lista de arquivos selecionados */}
       {selectedFiles.length > 0 && (
-        <div className="mt-6 space-y-3">
+        <div className="mt-6 space-y-4 animate-fade-in">
           <div className="flex items-center justify-between">
-            <h4 className="text-sm font-medium text-gray-700">
+            <h4 className="text-sm font-semibold text-white flex items-center gap-2">
+              <CheckCircle className="w-5 h-5 text-[#8B5CF6]" />
               Arquivos selecionados ({selectedFiles.length})
             </h4>
             <button
               onClick={clearFiles}
-              className="text-xs text-gray-500 hover:text-error-600 transition-colors duration-200"
+              className="text-xs text-gray-400 hover:text-red-400 transition-colors duration-200 font-medium px-3 py-1.5 rounded-lg hover:bg-red-500/10"
             >
               Limpar todos
             </button>
           </div>
 
-          <div className="space-y-2">
+          <div className="space-y-2 max-h-64 overflow-y-auto scrollbar-hide">
             {selectedFiles.map((file, index) => (
               <div
                 key={`${file.name}-${index}`}
-                className="flex items-center justify-between p-3 bg-white rounded-lg border border-gray-200 hover:border-gray-300 transition-colors duration-200"
+                className="flex items-center justify-between p-4 bg-gray-900/50 rounded-lg border border-gray-700/50 hover:border-gray-600 hover:bg-gray-900 transition-all duration-200"
               >
-                <div className="flex items-center space-x-3">
-                  <div className="p-2 bg-primary-100 rounded-lg">
-                    <FileImage className="w-4 h-4 text-primary-600" />
+                <div className="flex items-center space-x-4 flex-1 min-w-0">
+                  <div className="p-2.5 bg-gradient-to-r from-[#8B5CF6]/20 to-[#EC4899]/20 rounded-lg border border-[#8B5CF6]/30">
+                    <FileImage className="w-5 h-5 text-[#8B5CF6]" />
                   </div>
                   
                   <div className="flex-1 min-w-0">
-                    <p className="text-sm font-medium text-gray-900 truncate">
+                    <p className="text-sm font-medium text-white truncate">
                       {file.name}
                     </p>
-                    <div className="flex items-center space-x-2 text-xs text-gray-500">
+                    <div className="flex items-center space-x-2 text-xs text-gray-400 mt-1">
                       <span>{formatFileSize(file.size)}</span>
                       <span>•</span>
-                      <span>{file.type.split('/')[1].toUpperCase()}</span>
+                      <span className="px-2 py-0.5 bg-gray-800 rounded text-white font-medium">
+                        {file.type.split('/')[1].toUpperCase()}
+                      </span>
                     </div>
                   </div>
                 </div>
 
-                <div className="flex items-center space-x-2">
-                  <div className="p-1 bg-success-100 rounded-full">
-                    <CheckCircle className="w-4 h-4 text-success-600" />
+                <div className="flex items-center space-x-2 ml-4">
+                  <div className="p-1.5 bg-green-500/20 rounded-full border border-green-500/30">
+                    <CheckCircle className="w-4 h-4 text-green-400" />
                   </div>
                   
                   <button
-                    onClick={() => removeFile(index)}
-                    className="p-1 text-gray-400 hover:text-error-600 transition-colors duration-200"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      removeFile(index);
+                    }}
+                    className="p-1.5 text-gray-400 hover:text-red-400 hover:bg-red-500/10 rounded-lg transition-all duration-200"
                     title="Remover arquivo"
                   >
                     <AlertCircle className="w-4 h-4" />
