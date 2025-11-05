@@ -7,7 +7,7 @@ const nextConfig = {
     unoptimized: true
   },
   env: {
-    API_URL: process.env.NEXT_PUBLIC_API_URL || '/api',
+    NEXT_PUBLIC_API_URL: process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3002/api',
   },
   async rewrites() {
     // In production (Vercel), API calls will go to the deployed backend
@@ -20,8 +20,7 @@ const nextConfig = {
         destination: `${apiUrl}/:path*`
       }
     ];
-  },
-  output: 'standalone'
+  }
 };
 
 module.exports = nextConfig;
