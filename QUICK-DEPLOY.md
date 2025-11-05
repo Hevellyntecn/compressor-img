@@ -26,14 +26,21 @@ git push -u origin main
 1. Acesse [vercel.com](https://vercel.com)
 2. Clique em "New Project"
 3. Importe seu repositório
-4. Configure:
-   - **Framework Preset**: Next.js
-   - **Root Directory**: `client`
-   - **Build Command**: `npm run build`
-   - **Install Command**: `npm install`
-   - **Output Directory**: `.next`
+4. **IMPORTANTE**: Configure o Root Directory:
+   - Clique em "Edit" ao lado de "Root Directory"
+   - Digite: `client`
+   - Clique em "Continue"
+5. As outras configurações serão detectadas automaticamente:
+   - Framework Preset: Next.js ✅ (automático)
+   - Build Command: `npm run build` ✅ (automático)
+   - Install Command: `npm install` ✅ (automático)
+   - Output Directory: `.next` ✅ (automático)
 
-5. Clique em "Deploy"
+6. Adicione variável de ambiente (temporária):
+   - Name: `NEXT_PUBLIC_API_URL`
+   - Value: `http://localhost:3002/api`
+
+7. Clique em "Deploy"
 
 ### 3. Deploy Backend no Railway
 
