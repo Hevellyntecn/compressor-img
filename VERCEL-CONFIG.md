@@ -21,19 +21,34 @@ Na Vercel, ao importar o projeto, configure:
 3. Clique em **"Edit"** 
 4. Digite: `client`
 5. Clique em **"Continue"**
-6. Adicione a variável de ambiente:
+6. **⚠️ IMPORTANTE**: Sobre a variável de ambiente `NEXT_PUBLIC_API_URL`:
+
+   **OPÇÃO 1 - Sem Backend Deploy ainda (RECOMENDADO):**
+   - **PULE** a adição de variáveis por enquanto
+   - O frontend vai compilar normalmente
+   - Você adicionará depois quando o backend estiver no ar
+   
+   **OPÇÃO 2 - Se quiser adicionar agora:**
    - Name: `NEXT_PUBLIC_API_URL`
-   - Value: `http://localhost:3002/api` (temporário, você mudará depois)
+   - Value: `http://localhost:3002` ⬅️ Placeholder temporário
+   - ⚠️ **Compressão NÃO funcionará** até você colocar a URL real do backend
+
 7. Clique em **"Deploy"**
 
-### 🎯 Após o Deploy do Backend:
+### 🎯 Após o Deploy do Backend (Railway/Render):
+
+**AGORA SIM você precisa adicionar a variável real:**
 
 1. Vá em **Settings → Environment Variables** na Vercel
-2. Edite `NEXT_PUBLIC_API_URL` para a URL do seu backend:
-   - Railway: `https://seu-app.up.railway.app/api`
-   - Render: `https://seu-app.onrender.com/api`
-   - Heroku: `https://seu-app.herokuapp.com/api`
-3. Faça um **Redeploy** do projeto
+2. Adicione ou edite `NEXT_PUBLIC_API_URL` com a URL REAL do backend:
+   - Railway: `https://seu-app.up.railway.app`
+   - Render: `https://seu-app.onrender.com`
+   - Heroku: `https://seu-app.herokuapp.com`
+   
+   ⚠️ **NÃO adicione `/api` no final** - o código já faz isso automaticamente!
+
+3. Clique em **"Save"**
+4. Faça um **Redeploy** do projeto para aplicar as mudanças
 
 ### ✅ Verificação:
 
