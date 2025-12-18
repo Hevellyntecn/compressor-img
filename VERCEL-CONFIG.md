@@ -2,13 +2,22 @@
 
 ## ✅ O QUE VOCÊ PRECISA FAZER:
 
-### 1️⃣ No Painel da Vercel (ÚNICO PASSO IMPORTANTE!)
+### 1️⃣ No Painel da Vercel (CONFIGURAÇÃO COMPLETA!)
 
 1. Importe o projeto do GitHub: `Hevellyntecn/compressor-img`
-2. **Configure apenas UMA coisa:**
-   - **Root Directory**: `client` ⬅️ **SÓ ISSO!**
-3. Deixe todo o resto no padrão
-4. Clique em **Deploy**
+2. **Configure EXATAMENTE assim:**
+   
+   **Root Directory**: `client` ⬅️ **CRÍTICO!**
+   
+   **Framework Preset**: `Next.js` (auto-detectado)
+   
+   **Build Command**: Deixe vazio ou `npm run build`
+   
+   **Output Directory**: Deixe vazio ou `.next`
+   
+   **Install Command**: Deixe vazio ou `npm install`
+
+3. Clique em **Deploy**
 
 ### 2️⃣ Pronto! 🎉
 
@@ -77,6 +86,41 @@ Seu site estará em: `https://seu-projeto.vercel.app`
 
 ---
 
+## 🚨 SE DER ERRO 404 (NOT_FOUND):
+
+### Solução 1: Verificar Root Directory
+1. Vá em **Settings** → **General**
+2. Procure **Root Directory**
+3. Certifique-se que está: `client`
+4. Se não estiver, clique em **Edit**, digite `client`, **Save**
+5. Vá em **Deployments** e clique em **Redeploy**
+
+### Solução 2: Limpar Cache e Redeploy
+1. Vá em **Deployments**
+2. Clique nos **"..."** do último deploy
+3. Selecione **"Redeploy"**
+4. Marque **"Use existing Build Cache"** como **OFF**
+5. Clique em **"Redeploy"**
+
+### Solução 3: Verificar Build Settings
+1. Vá em **Settings** → **General**
+2. Em **Build & Development Settings**, clique em **Edit**
+3. Configure:
+   - **Build Command**: `npm run build`
+   - **Output Directory**: `.next`
+   - **Install Command**: `npm install`
+4. Clique em **Save**
+5. Faça **Redeploy**
+
+### Solução 4: Deletar e Reimportar Projeto
+Se nada funcionar:
+1. Delete o projeto no Vercel
+2. Importe novamente do GitHub
+3. Configure **Root Directory** = `client` desde o início
+4. Deploy
+
+---
+
 ## 🔧 Depois que o Backend estiver no ar:
 
 Adicione a variável de ambiente:
@@ -87,4 +131,12 @@ E faça **Redeploy**.
 
 ---
 
-**SIMPLES ASSIM!** Não precisa de `vercel.json` complicado, não precisa de configurações especiais. **Só Root Directory = `client`** e pronto! 🚀
+## ✅ CHECKLIST DE VERIFICAÇÃO:
+
+- [ ] Root Directory = `client`
+- [ ] Framework = Next.js
+- [ ] Build bem-sucedido (sem erros no log)
+- [ ] Output Directory = `.next` ou vazio
+- [ ] Cache limpo no redeploy
+
+**Se todos estiverem corretos, o site funcionará!** 🚀
