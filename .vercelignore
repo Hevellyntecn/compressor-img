@@ -1,6 +1,0 @@
-server/
-node_modules/
-*.md
-!client/**
-.env.local
-.env*.local
