@@ -1,4 +1,4 @@
-# 🖼️ PremiumTools - Suite Completa de Processamento de Mídia
+# 🖼️ Compressor de Imagem
 
 Sistema profissional premium de conversão e compactação de imagens e documentos, com interface sofisticada e funcionalidades avançadas. Reduz qualquer foto para até **470 KB** sem perda perceptível de qualidade, além de converter entre múltiplos formatos.
 
