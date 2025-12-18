@@ -7,20 +7,10 @@ const nextConfig = {
     unoptimized: true
   },
   env: {
-    NEXT_PUBLIC_API_URL: process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3002/api',
+    NEXT_PUBLIC_API_URL: process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3002',
   },
-  async rewrites() {
-    // In production (Vercel), API calls will go to the deployed backend
-    // In development, proxy to localhost:3002
-    const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3002/api';
-    
-    return [
-      {
-        source: '/api/:path*',
-        destination: `${apiUrl}/:path*`
-      }
-    ];
-  }
+  // Remover rewrites - causam problemas no Vercel
+  // A API será chamada diretamente via NEXT_PUBLIC_API_URL
 };
 
 module.exports = nextConfig;
