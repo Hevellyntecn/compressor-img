@@ -1,26 +1,23 @@
 'use client';
 
 import React, { useState } from 'react';
-import { Calculator, Upload, Download, FileSpreadsheet, TrendingUp, DollarSign } from 'lucide-react';
-import * as XLSX from 'xlsx';
+import { Calculator, Search, DollarSign, Gamepad2, TrendingUp } from 'lucide-react';
 
-interface JogoCalculo {
+interface Jogo {
+  codigo: number;
   nome: string;
-  rtp: number;
-  volatilidade: string;
-  apostaMinimaRecomendada: number;
-  multiplicadorMaximo: number;
-  frequenciaBonusEstimada: number;
+  ganhoMaximo: string;
+  multiplicador: string;
+  custoRodada: number;
+  dono: string;
+  descricao: string;
 }
 
-interface ResultadoCalculo {
-  jogo: string;
-  investimentoSugerido: number;
-  retornoEstimado: number;
-  lucroEstimado: number;
-  numeroRodadasRecomendadas: number;
-  tempoJogoEstimado: number;
-  risco: 'Baixo' | 'Médio' | 'Alto';
+interface Oferta {
+  valorBotao: number;
+  giros: number;
+  oferta: string;
+  custo: number;
 }
 
 export default function CalculosPage() {
@@ -202,231 +199,258 @@ export default function CalculosPage() {
         {/* Header */}
         <div className="text-center mb-8">
           <div className="flex items-center justify-center gap-3 mb-3">
-            <Calculator className="w-10 h-10 text-green-400" />
-            <h1 className="text-4xl font-bold bg-gradient-to-r from-green-400 to-emerald-400 bg-clip-text text-transparent">
-              Cálculos Cactus Gaming
+            <Gamepad2 className="w-10 h-10 text-purple-400" />
+            <h1 className="text-4xl font-bold bg-gradient-to-r from-purple-400 to-pink-400 bg-clip-text text-transparent">
+              Calculadora de Giros
             </h1>
           </div>
           <p className="text-gray-300">
-            Sistema inteligente de cálculo de investimento e retorno para jogos
+            Calcule quantos giros você recebe baseado no valor e no jogo selecionado
           </p>
         </div>
 
-        {/* Configurações */}
+        {/* Seleção de Jogo */}
         <div className="bg-gray-800/50 backdrop-blur-sm rounded-2xl shadow-xl p-8 mb-8 border border-gray-700/50">
           <h2 className="text-2xl font-bold text-white mb-6 flex items-center gap-2">
-            <TrendingUp className="w-6 h-6 text-green-400" />
-            Configurações de Cálculo
+            <Gamepad2 className="w-6 h-6 text-purple-400" />
+            Selecione o Jogo
           </h2>
 
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
-            {/* Saldo Inicial */}
-            <div>
-              <label className="block text-sm font-medium text-gray-300 mb-2">
-                Saldo Inicial (R$)
-              </label>
+          {/* Busca */}
+          <div className="mb-6">
+            <div className="relative">
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
               <input
-                type="number"
-                value={saldoInicial}
-                onChange={(e) => setSaldoInicial(parseFloat(e.target.value) || 0)}
-                min="0"
-                step="10"
-                className="w-full px-4 py-3 bg-gray-700/50 border border-gray-600 text-white rounded-lg focus:outline-none focus:border-green-500 focus:ring-2 focus:ring-green-500/20 transition-all"
+                type="text"
+                placeholder="Buscar por nome, código ou provedor..."
+                value={busca}
+                onChange={(e) => setBusca(e.target.value)}
+                className="w-full pl-10 pr-4 py-3 bg-gray-700/50 border border-gray-600 text-white rounded-lg focus:outline-none focus:border-purple-500 focus:ring-2 focus:ring-purple-500/20 transition-all"
               />
             </div>
+          </div>
 
-            {/* Tempo Disponível */}
-            <div>
-              <label className="block text-sm font-medium text-gray-300 mb-2">
-                Tempo Disponível (min)
-              </label>
-              <input
-                type="number"
-                value={tempoDisponivel}
-                onChange={(e) => setTempoDisponivel(parseFloat(e.target.value) || 0)}
-                min="0"
-                step="5"
-                className="w-full px-4 py-3 bg-gray-700/50 border border-gray-600 text-white rounded-lg focus:outline-none focus:border-green-500 focus:ring-2 focus:ring-green-500/20 transition-all"
-              />
-            </div>
-
-            {/* Perfil de Risco */}
-            <div>
-              <label className="block text-sm font-medium text-gray-300 mb-2">
-                Perfil de Risco
-              </label>
-              <select
-                value={perfilRisco}
-                onChange={(e) => setPerfilRisco(e.target.value as any)}
-                className="w-full px-4 py-3 bg-gray-700/50 border border-gray-600 text-white rounded-lg focus:outline-none focus:border-green-500 focus:ring-2 focus:ring-green-500/20 transition-all"
+          {/* Lista de Jogos */}
+          <div className="grid grid-cols-1 gap-3 max-h-96 overflow-y-auto">
+            {jogosFiltrados.map((jogo) => (
+              <button
+                key={`${jogo.codigo}-${jogo.custoRodada}`}
+                onClick={() => setJogoSelecionado(jogo)}
+                className={`text-left p-4 rounded-lg border transition-all ${
+                  jogoSelecionado?.codigo === jogo.codigo && jogoSelecionado?.custoRodada === jogo.custoRodada
+                    ? 'bg-purple-900/40 border-purple-500'
+                    : 'bg-gray-700/30 border-gray-600 hover:bg-gray-700/50 hover:border-gray-500'
+                }`}
               >
-                <option value="conservador">Conservador</option>
-                <option value="moderado">Moderado</option>
-                <option value="agressivo">Agressivo</option>
-              </select>
-            </div>
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-white font-medium">{jogo.nome}</p>
+                    <p className="text-sm text-gray-400">
+                      Código: {jogo.codigo} | {jogo.dono} | Custo: R$ {jogo.custoRodada.toFixed(2)}/rodada
+                    </p>
+                  </div>
+                  {jogoSelecionado?.codigo === jogo.codigo && jogoSelecionado?.custoRodada === jogo.custoRodada && (
+                    <div className="bg-purple-500 w-6 h-6 rounded-full flex items-center justify-center">
+                      <span className="text-white text-xs">✓</span>
+                    </div>
+                  )}
+                </div>
+              </button>
+            ))}
           </div>
 
-          {/* Botões de Ação */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <label className="cursor-pointer">
-              <input
-                type="file"
-                accept=".xlsx,.xls"
-                onChange={handleFileUpload}
-                className="hidden"
-              />
-              <div className="bg-gradient-to-r from-blue-600 to-cyan-600 text-white px-6 py-3 rounded-lg font-medium hover:shadow-lg hover:shadow-blue-500/50 transition-all flex items-center justify-center gap-2">
-                <Upload className="w-5 h-5" />
-                Importar XLSX
-              </div>
-            </label>
-
-            <button
-              onClick={usarJogosPadrao}
-              className="bg-gradient-to-r from-purple-600 to-pink-600 text-white px-6 py-3 rounded-lg font-medium hover:shadow-lg hover:shadow-purple-500/50 transition-all flex items-center justify-center gap-2"
-            >
-              <FileSpreadsheet className="w-5 h-5" />
-              Usar Jogos Padrão
-            </button>
-
-            <button
-              onClick={calcularInvestimentos}
-              disabled={jogos.length === 0}
-              className="bg-gradient-to-r from-green-600 to-emerald-600 text-white px-6 py-3 rounded-lg font-medium hover:shadow-lg hover:shadow-green-500/50 transition-all flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              <Calculator className="w-5 h-5" />
-              Calcular
-            </button>
-          </div>
-
-          {jogos.length > 0 && (
-            <div className="mt-4 p-4 bg-green-900/20 border border-green-500/30 rounded-lg">
-              <p className="text-green-300 text-sm">
-                ✓ {jogos.length} jogos carregados
-              </p>
+          {jogosFiltrados.length === 0 && (
+            <div className="text-center py-8">
+              <p className="text-gray-400">Nenhum jogo encontrado</p>
             </div>
           )}
         </div>
 
-        {/* Resumo dos Resultados */}
-        {resultados.length > 0 && (
-          <>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
-              <div className="bg-gray-800/50 backdrop-blur-sm rounded-xl p-6 shadow-lg border border-blue-500/30">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-sm text-gray-400">Investimento Total</p>
-                    <p className="text-3xl font-bold text-blue-400">
-                      R$ {totalInvestimento.toFixed(2)}
-                    </p>
-                  </div>
-                  <DollarSign className="w-10 h-10 text-blue-400/50" />
-                </div>
+        {/* Informações do Jogo Selecionado */}
+        {jogoSelecionado && (
+          <div className="bg-gray-800/50 backdrop-blur-sm rounded-2xl shadow-xl p-8 mb-8 border border-purple-500/30">
+            <h2 className="text-2xl font-bold text-white mb-4">
+              {jogoSelecionado.nome}
+            </h2>
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
+              <div>
+                <p className="text-gray-400">Código</p>
+                <p className="text-white font-medium">{jogoSelecionado.codigo}</p>
               </div>
-
-              <div className="bg-gray-800/50 backdrop-blur-sm rounded-xl p-6 shadow-lg border border-green-500/30">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-sm text-gray-400">Retorno Estimado</p>
-                    <p className="text-3xl font-bold text-green-400">
-                      R$ {totalRetorno.toFixed(2)}
-                    </p>
-                  </div>
-                  <TrendingUp className="w-10 h-10 text-green-400/50" />
-                </div>
+              <div>
+                <p className="text-gray-400">Provedor</p>
+                <p className="text-white font-medium">{jogoSelecionado.dono}</p>
               </div>
-
-              <div className={`bg-gray-800/50 backdrop-blur-sm rounded-xl p-6 shadow-lg border ${totalLucro >= 0 ? 'border-green-500/30' : 'border-red-500/30'}`}>
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-sm text-gray-400">Lucro Estimado</p>
-                    <p className={`text-3xl font-bold ${totalLucro >= 0 ? 'text-green-400' : 'text-red-400'}`}>
-                      R$ {totalLucro.toFixed(2)}
-                    </p>
-                  </div>
-                  <Calculator className={`w-10 h-10 ${totalLucro >= 0 ? 'text-green-400/50' : 'text-red-400/50'}`} />
-                </div>
+              <div>
+                <p className="text-gray-400">Custo/Rodada</p>
+                <p className="text-purple-400 font-medium">R$ {jogoSelecionado.custoRodada.toFixed(2)}</p>
+              </div>
+              <div>
+                <p className="text-gray-400">Ganho Máximo</p>
+                <p className="text-green-400 font-medium">{jogoSelecionado.ganhoMaximo}</p>
               </div>
             </div>
-
-            {/* Tabela de Resultados */}
-            <div className="bg-gray-800/50 backdrop-blur-sm rounded-2xl shadow-xl p-8 border border-gray-700/50">
-              <div className="flex items-center justify-between mb-6">
-                <h2 className="text-2xl font-bold text-white">
-                  Resultados Detalhados
-                </h2>
-                <button
-                  onClick={exportarResultados}
-                  className="bg-gradient-to-r from-emerald-600 to-green-600 text-white px-6 py-3 rounded-lg font-medium hover:shadow-lg hover:shadow-emerald-500/50 transition-all flex items-center gap-2"
-                >
-                  <Download className="w-5 h-5" />
-                  Exportar XLSX
-                </button>
-              </div>
-
-              <div className="overflow-x-auto">
-                <table className="w-full">
-                  <thead>
-                    <tr className="border-b border-gray-700">
-                      <th className="text-left py-3 px-4 text-gray-300 font-medium">Jogo</th>
-                      <th className="text-right py-3 px-4 text-gray-300 font-medium">Investimento</th>
-                      <th className="text-right py-3 px-4 text-gray-300 font-medium">Retorno Est.</th>
-                      <th className="text-right py-3 px-4 text-gray-300 font-medium">Lucro Est.</th>
-                      <th className="text-center py-3 px-4 text-gray-300 font-medium">Rodadas</th>
-                      <th className="text-center py-3 px-4 text-gray-300 font-medium">Tempo (min)</th>
-                      <th className="text-center py-3 px-4 text-gray-300 font-medium">Risco</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {resultados.map((resultado, index) => (
-                      <tr key={index} className="border-b border-gray-700/50 hover:bg-gray-700/20 transition-colors">
-                        <td className="py-4 px-4 text-white font-medium">{resultado.jogo}</td>
-                        <td className="py-4 px-4 text-right text-blue-400">
-                          R$ {resultado.investimentoSugerido.toFixed(2)}
-                        </td>
-                        <td className="py-4 px-4 text-right text-green-400">
-                          R$ {resultado.retornoEstimado.toFixed(2)}
-                        </td>
-                        <td className={`py-4 px-4 text-right font-medium ${resultado.lucroEstimado >= 0 ? 'text-green-400' : 'text-red-400'}`}>
-                          R$ {resultado.lucroEstimado.toFixed(2)}
-                        </td>
-                        <td className="py-4 px-4 text-center text-gray-300">
-                          {resultado.numeroRodadasRecomendadas}
-                        </td>
-                        <td className="py-4 px-4 text-center text-gray-300">
-                          {resultado.tempoJogoEstimado.toFixed(0)}
-                        </td>
-                        <td className="py-4 px-4 text-center">
-                          <span className={`px-3 py-1 rounded-full text-xs font-medium ${
-                            resultado.risco === 'Baixo' ? 'bg-green-900/40 text-green-300 border border-green-500/30' :
-                            resultado.risco === 'Médio' ? 'bg-yellow-900/40 text-yellow-300 border border-yellow-500/30' :
-                            'bg-red-900/40 text-red-300 border border-red-500/30'
-                          }`}>
-                            {resultado.risco}
-                          </span>
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            </div>
-          </>
-        )}
-
-        {/* Estado vazio */}
-        {jogos.length === 0 && (
-          <div className="bg-gray-800/50 backdrop-blur-sm rounded-2xl shadow-xl p-12 border border-gray-700/50 text-center">
-            <FileSpreadsheet className="w-16 h-16 text-gray-600 mx-auto mb-4" />
-            <h3 className="text-xl font-bold text-white mb-2">
-              Nenhum jogo carregado
-            </h3>
-            <p className="text-gray-400 mb-6">
-              Importe um arquivo XLSX ou use os jogos padrão para começar
-            </p>
           </div>
         )}
+
+        {/* Cálculo de Giros */}
+        {jogoSelecionado && (
+          <div className="bg-gray-800/50 backdrop-blur-sm rounded-2xl shadow-xl p-8 mb-8 border border-gray-700/50">
+            <h2 className="text-2xl font-bold text-white mb-6 flex items-center gap-2">
+              <Calculator className="w-6 h-6 text-green-400" />
+              Calcular Giros
+            </h2>
+
+            {/* Valor do Botão */}
+            <div className="mb-6">
+              <label className="block text-sm font-medium text-gray-300 mb-2">
+                Valor do Botão (R$)
+              </label>
+              <input
+                type="number"
+                value={valorBotao || ''}
+                onChange={(e) => setValorBotao(parseFloat(e.target.value) || 0)}
+                min="0"
+                step="1"
+                placeholder="Digite o valor"
+                className="w-full px-4 py-3 bg-gray-700/50 border border-gray-600 text-white rounded-lg focus:outline-none focus:border-green-500 focus:ring-2 focus:ring-green-500/20 transition-all text-lg"
+              />
+            </div>
+
+            {/* Valores Sugeridos */}
+            <div className="mb-6">
+              <label className="block text-sm font-medium text-gray-300 mb-3">
+                Valores Sugeridos
+              </label>
+              <div className="grid grid-cols-5 gap-2">
+                {valoresSugeridos.map((valor) => (
+                  <button
+                    key={valor}
+                    onClick={() => setValorBotao(valor)}
+                    className={`py-2 px-4 rounded-lg font-medium transition-all ${
+                      valorBotao === valor
+                        ? 'bg-purple-600 text-white'
+                        : 'bg-gray-700/50 text-gray-300 hover:bg-gray-700'
+                    }`}
+                  >
+                    R$ {valor}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* Preview do Cálculo */}
+            {valorBotao > 0 && (
+              <div className="mb-6 p-4 bg-purple-900/20 border border-purple-500/30 rounded-lg">
+                <div className="grid grid-cols-3 gap-4 text-center">
+                  <div>
+                    <p className="text-gray-400 text-sm">Valor do Botão</p>
+                    <p className="text-white font-bold text-xl">R$ {valorBotao.toFixed(2)}</p>
+                  </div>
+                  <div>
+                    <p className="text-gray-400 text-sm">Giros</p>
+                    <p className="text-purple-400 font-bold text-xl">
+                      {Math.floor(valorBotao / jogoSelecionado.custoRodada)}
+                    </p>
+                  </div>
+                  <div>
+                    <p className="text-gray-400 text-sm">Custo Real</p>
+                    <p className="text-green-400 font-bold text-xl">
+                      R$ {(Math.floor(valorBotao / jogoSelecionado.custoRodada) * jogoSelecionado.custoRodada).toFixed(2)}
+                    </p>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* Botão Calcular */}
+            <div className="flex gap-4">
+              <button
+                onClick={calcularGiros}
+                disabled={!jogoSelecionado || valorBotao <= 0}
+                className="flex-1 bg-gradient-to-r from-purple-600 to-pink-600 text-white px-6 py-4 rounded-lg font-medium hover:shadow-lg hover:shadow-purple-500/50 transition-all flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                <Calculator className="w-5 h-5" />
+                Adicionar Oferta
+              </button>
+              {ofertas.length > 0 && (
+                <button
+                  onClick={limparOfertas}
+                  className="bg-gray-700 text-white px-6 py-4 rounded-lg font-medium hover:bg-gray-600 transition-all"
+                >
+                  Limpar
+                </button>
+              )}
+            </div>
+          </div>
+        )}
+
+        {/* Tabela de Ofertas */}
+        {ofertas.length > 0 && (
+          <div className="bg-gray-800/50 backdrop-blur-sm rounded-2xl shadow-xl p-8 border border-gray-700/50">
+            <h2 className="text-2xl font-bold text-white mb-6 flex items-center gap-2">
+              <TrendingUp className="w-6 h-6 text-green-400" />
+              Ofertas Calculadas
+            </h2>
+
+            <div className="overflow-x-auto">
+              <table className="w-full">
+                <thead className="bg-yellow-500">
+                  <tr className="border-b border-gray-700">
+                    <th className="text-center py-3 px-4 text-gray-900 font-bold">Oferta</th>
+                    <th className="text-center py-3 px-4 text-gray-900 font-bold">Valor Botão</th>
+                    <th className="text-center py-3 px-4 text-gray-900 font-bold">Giros</th>
+                    <th className="text-center py-3 px-4 text-gray-900 font-bold">Oferta</th>
+                    <th className="text-center py-3 px-4 text-gray-900 font-bold">Custo</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {ofertas.map((oferta, index) => (
+                    <tr key={index} className="border-b border-gray-700/50 hover:bg-gray-700/20 transition-colors">
+                      <td className="py-4 px-4 text-center text-white font-medium">
+                        Oferta {index + 1}
+                      </td>
+                      <td className="py-4 px-4 text-center text-blue-400 font-medium">
+                        {oferta.valorBotao}
+                      </td>
+                      <td className="py-4 px-4 text-center text-purple-400 font-bold text-lg">
+                        {oferta.giros}
+                      </td>
+                      <td className="py-4 px-4 text-center text-white">
+                        {oferta.oferta}
+                      </td>
+                      <td className="py-4 px-4 text-center text-green-400 font-medium">
+                        R$ {oferta.custo.toFixed(2)}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+
+            {/* Resumo */}
+            <div className="mt-6 grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div className="bg-gray-700/30 rounded-lg p-4">
+                <p className="text-gray-400 text-sm">Total de Ofertas</p>
+                <p className="text-white font-bold text-2xl">{ofertas.length}</p>
+              </div>
+              <div className="bg-gray-700/30 rounded-lg p-4">
+                <p className="text-gray-400 text-sm">Total de Giros</p>
+                <p className="text-purple-400 font-bold text-2xl">
+                  {ofertas.reduce((sum, o) => sum + o.giros, 0)}
+                </p>
+              </div>
+              <div className="bg-gray-700/30 rounded-lg p-4">
+                <p className="text-gray-400 text-sm">Custo Total</p>
+                <p className="text-green-400 font-bold text-2xl">
+                  R$ {ofertas.reduce((sum, o) => sum + o.custo, 0).toFixed(2)}
+                </p>
+              </div>
+            </div>
+          </div>
+        )}
+
+
       </div>
     </div>
   );
