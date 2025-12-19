@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { Calculator } from 'lucide-react';
 
 interface Jogo {
@@ -25,6 +25,8 @@ export default function CalculosPage() {
   const [valorBase, setValorBase] = useState<number>(6);
   const [valoresPersonalizados, setValoresPersonalizados] = useState<number[]>([50, 100, 400, 1000, 2500, 0, 0, 0, 10, 30, 100]);
   const [ofertas, setOfertas] = useState<LinhaOferta[]>([]);
+  const [buscaJogo, setBuscaJogo] = useState<string>('');
+  const [mostrarLista, setMostrarLista] = useState<boolean>(false);
 
   const jogos: Jogo[] = [
     { codigo: 950, nome: 'AVIATOR', ganhoMaximo: 'R$ 50.000,00', multiplicador: '-', custoRodada: 10.00, dono: 'Spribe', descricao: '950 - AVIATOR - R$ 10,00 - Spribe' },
@@ -56,13 +58,7 @@ export default function CalculosPage() {
     { codigo: 891, nome: '888 Gold', ganhoMaximo: 'R$ 100,00', multiplicador: '2.000', custoRodada: 0.05, dono: 'Pragmatic Play', descricao: '891 - 888 Gold - R$ 0,05 - Pragmatic Play' },
   ];
 
-  useEffect(() => {
-    if (jogoSelecionado) {
-      calcularTodasOfertas();
-    }
-  }, [jogoSelecionado, valoresPersonalizados]);
-
-  const calcularTodasOfertas = () => {
+  const calcularTodasOfertas = useCallback(() => {
     if (!jogoSelecionado) return;
 
     const novasOfertas = valoresPersonalizados.map(valor => {
@@ -70,12 +66,12 @@ export default function CalculosPage() {
         return {
           valorBotao: 0,
           giros: 0,
-          oferta: 'R$ = 0 Giros Extras',
+          oferta: 'R$0 = 0 Giros Extras',
           custo: 0
         };
       }
 
-      const giros = Math.floor(valor / jogoSelecionado.custoRodada);
+      const giros = Math.ceil((valor * (valorBase / 100)) / jogoSelecionado.custoRodada);
       const custoReal = giros * jogoSelecionado.custoRodada;
 
       return {
@@ -87,7 +83,13 @@ export default function CalculosPage() {
     });
 
     setOfertas(novasOfertas);
-  };
+  }, [jogoSelecionado, valoresPersonalizados, valorBase]);
+
+  useEffect(() => {
+    if (jogoSelecionado) {
+      calcularTodasOfertas();
+    }
+  }, [jogoSelecionado, calcularTodasOfertas]);
 
   const atualizarValor = (index: number, novoValor: number) => {
     const novosValores = [...valoresPersonalizados];
@@ -95,106 +97,129 @@ export default function CalculosPage() {
     setValoresPersonalizados(novosValores);
   };
 
+  const jogosFiltrados = jogos.filter(jogo => 
+    jogo.nome.toLowerCase().includes(buscaJogo.toLowerCase()) ||
+    jogo.codigo.toString().includes(buscaJogo) ||
+    jogo.dono.toLowerCase().includes(buscaJogo.toLowerCase())
+  );
+
+  const selecionarJogo = (jogo: Jogo) => {
+    setJogoSelecionado(jogo);
+    setBuscaJogo(`${jogo.codigo} - ${jogo.nome} - R$ ${jogo.custoRodada.toFixed(2)} - ${jogo.dono}`);
+    setMostrarLista(false);
+  };
+
   return (
-    <div className="min-h-screen py-8 bg-white px-4">
+    <div className="min-h-screen py-8 bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900 px-4">
       <div className="max-w-7xl mx-auto">
-        {/* Guia de cores */}
-        <div className="mb-6 border border-gray-300">
-          <div className="bg-white border-b border-gray-300 px-4 py-2">
-            <p className="text-sm font-semibold text-gray-700">- Guia de cores</p>
+        <div className="text-center mb-8">
+          <div className="flex items-center justify-center gap-3 mb-3">
+            <Calculator className="w-10 h-10 text-purple-400" />
+            <h1 className="text-4xl font-bold bg-gradient-to-r from-purple-400 to-pink-400 bg-clip-text text-transparent">
+              Calculadora de Giros
+            </h1>
           </div>
-          <div className="bg-yellow-400 px-4 py-2 border-b border-gray-300">
-            <p className="text-sm font-semibold text-gray-900">Valores para alterar</p>
-          </div>
-          <div className="bg-white px-4 py-2 border-b border-gray-300">
-            <p className="text-sm font-semibold text-red-600">Valores para nunca alterar</p>
-          </div>
+          <p className="text-gray-300">
+            Calcule quantos giros extras baseado no valor e no custo por rodada
+          </p>
         </div>
 
         <div className="grid grid-cols-12 gap-4">
-          {/* Coluna Esquerda - Seleção */}
           <div className="col-span-5">
-            <div className="border border-gray-300">
-              {/* Seletor de Jogo */}
-              <div className="mb-4">
-                <label className="block px-4 py-2 bg-white border-b border-gray-300">
-                  <span className="text-sm font-semibold text-gray-700">Código + Jogo + Dono + Custo Rodada</span>
+            <div className="bg-gray-800/50 backdrop-blur-sm rounded-2xl shadow-xl border border-gray-700/50 overflow-hidden">
+              <div className="mb-0 relative">
+                <label className="block px-4 py-3 bg-gradient-to-r from-purple-600/20 to-pink-600/20 border-b border-gray-700">
+                  <span className="text-sm font-semibold text-purple-300">Código + Jogo + Dono + Custo Rodada</span>
                 </label>
-                <select
-                  value={jogoSelecionado ? `${jogoSelecionado.codigo}-${jogoSelecionado.custoRodada}` : ''}
+                <input
+                  type="text"
+                  value={buscaJogo}
                   onChange={(e) => {
-                    const [codigo, custo] = e.target.value.split('-');
-                    const jogo = jogos.find(j => j.codigo === parseInt(codigo) && j.custoRodada === parseFloat(custo));
-                    setJogoSelecionado(jogo || null);
+                    setBuscaJogo(e.target.value);
+                    setMostrarLista(true);
                   }}
-                  className="w-full px-3 py-2 border-0 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-                >
-                  <option value="">Selecione um jogo...</option>
-                  {jogos.map((jogo) => (
-                    <option key={`${jogo.codigo}-${jogo.custoRodada}`} value={`${jogo.codigo}-${jogo.custoRodada}`}>
-                      {jogo.codigo} - {jogo.nome} - R$ {jogo.custoRodada.toFixed(2)} - {jogo.dono}
-                    </option>
-                  ))}
-                </select>
+                  onFocus={() => setMostrarLista(true)}
+                  placeholder="Digite para buscar (ex: gates, aviator, 784)..."
+                  className="w-full px-3 py-3 bg-gray-700/50 text-white border-0 text-sm focus:outline-none focus:ring-2 focus:ring-purple-500 placeholder-gray-500"
+                />
+                
+                {mostrarLista && buscaJogo && jogosFiltrados.length > 0 && (
+                  <div className="absolute z-50 w-full mt-1 bg-gray-800 border border-gray-700 rounded-lg shadow-2xl max-h-64 overflow-y-auto">
+                    {jogosFiltrados.map((jogo) => (
+                      <button
+                        key={`${jogo.codigo}-${jogo.custoRodada}`}
+                        onClick={() => selecionarJogo(jogo)}
+                        className="w-full text-left px-3 py-2 text-sm text-white hover:bg-purple-600/30 transition-colors border-b border-gray-700/50 last:border-0"
+                      >
+                        <span className="font-semibold text-purple-300">{jogo.codigo}</span> - {jogo.nome} - <span className="text-green-400">R$ {jogo.custoRodada.toFixed(2)}</span> - <span className="text-pink-300">{jogo.dono}</span>
+                      </button>
+                    ))}
+                  </div>
+                )}
+                
+                {mostrarLista && buscaJogo && jogosFiltrados.length === 0 && (
+                  <div className="absolute z-50 w-full mt-1 bg-gray-800 border border-gray-700 rounded-lg shadow-2xl p-3">
+                    <p className="text-sm text-gray-400">Nenhum jogo encontrado</p>
+                  </div>
+                )}
               </div>
 
-              {/* Valor de Base */}
               <div>
-                <label className="block px-4 py-2 bg-white border-b border-t border-gray-300">
-                  <span className="text-sm font-semibold text-gray-700">Valor de Base (%)</span>
+                <label className="block px-4 py-3 bg-gradient-to-r from-purple-600/20 to-pink-600/20 border-b border-t border-gray-700">
+                  <span className="text-sm font-semibold text-purple-300">Valor de Base (%)</span>
                 </label>
                 <input
                   type="number"
                   value={valorBase}
                   onChange={(e) => setValorBase(parseFloat(e.target.value) || 0)}
-                  className="w-full px-3 py-2 bg-yellow-400 text-gray-900 font-semibold text-center border-0 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="w-full px-3 py-3 bg-pink-500/20 text-pink-200 font-bold text-center text-lg border-0 focus:outline-none focus:ring-2 focus:ring-pink-500"
                   placeholder="6%"
                 />
               </div>
             </div>
           </div>
 
-          {/* Coluna Direita - Tabela de Ofertas */}
           <div className="col-span-7">
-            <div className="border border-gray-300 overflow-hidden">
-              {/* Header Oferta */}
-              <div className="bg-orange-500 px-4 py-2 border-b border-gray-300">
-                <p className="text-sm font-bold text-white">Oferta</p>
+            <div className="bg-gray-800/50 backdrop-blur-sm rounded-2xl shadow-xl border border-gray-700/50 overflow-hidden">
+              <div className="bg-gradient-to-r from-purple-600 to-pink-600 px-4 py-3 border-b border-gray-700">
+                <p className="text-sm font-bold text-white flex items-center gap-2">
+                  <Calculator className="w-4 h-4" />
+                  Ofertas Calculadas
+                </p>
               </div>
 
-              {/* Tabela */}
               <table className="w-full border-collapse">
                 <thead>
-                  <tr className="bg-white border-b border-gray-300">
-                    <th className="px-3 py-2 text-xs font-semibold text-gray-700 border-r border-gray-300">Valor Botão</th>
-                    <th className="px-3 py-2 text-xs font-semibold text-gray-700 border-r border-gray-300">Giros</th>
-                    <th className="px-3 py-2 text-xs font-semibold text-gray-700 border-r border-gray-300">Oferta</th>
-                    <th className="px-3 py-2 text-xs font-semibold text-gray-700">Custo</th>
+                  <tr className="bg-gradient-to-r from-purple-600/30 to-pink-600/30 border-b border-purple-500/30">
+                    <th className="px-3 py-3 text-xs font-bold text-purple-200 border-r border-gray-600">Valor Botão</th>
+                    <th className="px-3 py-3 text-xs font-bold text-purple-200 border-r border-gray-600">Giros</th>
+                    <th className="px-3 py-3 text-xs font-bold text-purple-200 border-r border-gray-600">Oferta</th>
+                    <th className="px-3 py-3 text-xs font-bold text-purple-200">Custo</th>
                   </tr>
                 </thead>
                 <tbody>
                   {valoresPersonalizados.map((valor, index) => {
                     const oferta = ofertas[index] || { valorBotao: 0, giros: 0, oferta: '', custo: 0 };
-                    const isValorAlto = index < 5; // Primeiras 5 linhas com fundo amarelo
+                    const isValorAlto = index < 5;
 
                     return (
-                      <tr key={index} className={`border-b border-gray-300 ${isValorAlto ? 'bg-yellow-400' : 'bg-white'}`}>
-                        <td className="px-2 py-1 border-r border-gray-300">
+                      <tr key={index} className={`border-b border-gray-700/50 hover:bg-purple-900/10 transition-colors ${isValorAlto ? 'bg-purple-900/10' : 'bg-gray-800/20'}`}>
+                        <td className="px-2 py-2 border-r border-gray-700/50">
                           <input
                             type="number"
                             value={valor || ''}
                             onChange={(e) => atualizarValor(index, parseFloat(e.target.value) || 0)}
-                            className={`w-full px-2 py-1 text-sm text-center border-0 focus:outline-none focus:ring-1 focus:ring-blue-500 ${isValorAlto ? 'bg-yellow-400 font-semibold' : 'bg-white'}`}
+                            className={`w-full px-3 py-2 text-sm text-center border-0 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 transition-all ${isValorAlto ? 'bg-purple-600/20 text-purple-200 font-semibold placeholder-purple-400/50' : 'bg-gray-700/50 text-gray-300 placeholder-gray-500'}`}
                             placeholder="0"
                           />
                         </td>
-                        <td className={`px-2 py-1 text-sm text-center border-r border-gray-300 ${isValorAlto ? 'text-red-600 font-semibold' : 'text-gray-700'}`}>
+                        <td className={`px-2 py-2 text-base font-bold text-center border-r border-gray-700/50 ${isValorAlto ? 'text-pink-400' : 'text-purple-300'}`}>
                           {oferta.giros}
                         </td>
-                        <td className={`px-2 py-1 text-xs text-center border-r border-gray-300 ${isValorAlto ? 'text-red-600 font-semibold' : 'text-gray-700'}`}>
+                        <td className={`px-2 py-2 text-xs text-center border-r border-gray-700/50 ${isValorAlto ? 'text-pink-300 font-medium' : 'text-gray-400'}`}>
                           {oferta.oferta}
                         </td>
-                        <td className={`px-2 py-1 text-sm text-center ${isValorAlto ? 'text-red-600 font-semibold' : 'text-gray-700'}`}>
+                        <td className={`px-2 py-2 text-sm font-semibold text-center ${isValorAlto ? 'text-green-400' : 'text-green-300'}`}>
                           R$ {oferta.custo.toFixed(2)}
                         </td>
                       </tr>
@@ -206,11 +231,10 @@ export default function CalculosPage() {
           </div>
         </div>
 
-        {/* Mensagem de Status */}
         {!jogoSelecionado && (
-          <div className="mt-6 p-4 bg-blue-50 border border-blue-200 rounded">
-            <p className="text-sm text-blue-800">
-              <Calculator className="w-4 h-4 inline mr-2" />
+          <div className="mt-6 p-4 bg-purple-900/20 border border-purple-500/30 rounded-lg">
+            <p className="text-sm text-purple-300 flex items-center gap-2">
+              <Calculator className="w-4 h-4" />
               Selecione um jogo para começar a calcular os giros extras
             </p>
           </div>

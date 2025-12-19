@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import { Calendar, Plus, Trash2, CheckCircle, Clock, FileText, Download } from 'lucide-react';
 
 interface Demanda {
@@ -30,29 +30,26 @@ export default function RelatoriosPage() {
   const [cliente, setCliente] = useState('');
   const [jogoPrincipal, setJogoPrincipal] = useState('');
   const [jogoDownsell, setJogoDownsell] = useState('');
-  const [jogosSeparados, setJogosSeparados] = useState(false);
   const [mensagemGerada, setMensagemGerada] = useState('');
 
   // Adicionar nova demanda
   const adicionarDemanda = () => {
     if (!novaDemanda.trim()) return;
 
-    // Validações
-    const sazonais = demandas.filter(d => d.tipo === 'sazonal');
-    const totalCampanhasSazonais = sazonais.reduce((total, d) => {
-      // Se são jogos separados, conta como 2 campanhas, senão conta como 1
-      return total + (d.jogosSeparados ? 2 : 1);
-    }, 0);
+    // Para sazonais, jogos são obrigatórios
+    if (tipoDemanda === 'sazonal' && (!jogoPrincipal.trim() || !jogoDownsell.trim())) {
+      alert('Para campanhas sazonais, informe o Jogo Principal e o Jogo Downsell!');
+      return;
+    }
 
+    // Validações
+    const sazonais = demandas.filter(d => d.tipo === 'sazonal').length;
     const reativacoes = demandas.filter(d => d.tipo === 'reativacao').length;
 
-    // Para sazonais, verificar se adicionar essa demanda ultrapassa 7 campanhas
-    if (tipoDemanda === 'sazonal') {
-      const novasCampanhas = jogosSeparados ? 2 : 1;
-      if (totalCampanhasSazonais + novasCampanhas > 7) {
-        alert(`Máximo de 7 campanhas sazonais por semana! (Você teria ${totalCampanhasSazonais + novasCampanhas})`);
-        return;
-      }
+    // Máximo de 7 sazonais (cada uma com 2 jogos)
+    if (tipoDemanda === 'sazonal' && sazonais >= 7) {
+      alert('Máximo de 7 sazonais por semana! (cada uma com 2 jogos: principal + downsell)');
+      return;
     }
 
     if (tipoDemanda === 'reativacao' && reativacoes >= 3) {
@@ -66,11 +63,10 @@ export default function RelatoriosPage() {
       tipo: tipoDemanda,
       concluida: false,
       cliente: cliente.trim() || undefined,
-      jogos: (jogoPrincipal && jogoDownsell) ? {
+      jogos: tipoDemanda === 'sazonal' ? {
         principal: jogoPrincipal,
         downsell: jogoDownsell
-      } : undefined,
-      jogosSeparados: tipoDemanda === 'sazonal' ? jogosSeparados : undefined
+      } : undefined
     };
 
     setDemandas([...demandas, nova]);
@@ -102,24 +98,26 @@ export default function RelatoriosPage() {
       sexta: []
     };
 
-    // Segunda: Todas as copys
+    // Copys vão para segunda
     const copys = demandas.filter(d => d.tipo === 'copy');
-    dist.segunda = copys.map(d => ({ ...d, dia: 'segunda' }));
+    dist.segunda = [...copys.map(d => ({ ...d, dia: 'segunda' }))];
 
-    // Terça a Sexta: Distribuir sazonais e reativações
-    const sazonais = demandas.filter(d => d.tipo === 'sazonal');
+    // Sazonais: sempre 1 campanha com 2 jogos (principal + downsell)
+    const campanhasSazonais = demandas.filter(d => d.tipo === 'sazonal');
+
+    // Reativações
     const reativacoes = demandas.filter(d => d.tipo === 'reativacao');
 
-    // Combinar sazonais e reativações
-    const trabalhos = [...sazonais, ...reativacoes];
+    // Combinar todas as campanhas (sazonais expandidas + reativações)
+    const todasCampanhas = [...campanhasSazonais, ...reativacoes];
     
-    // Distribuir igualmente de terça a sexta (4 dias)
-    const diasDisponiveis = ['terca', 'quarta', 'quinta', 'sexta'] as const;
-    const porDia = Math.ceil(trabalhos.length / 4);
+    // Distribuir de segunda a sexta (5 dias) em horário comercial
+    const diasDisponiveis: Array<keyof DistribuicaoSemanal> = ['segunda', 'terca', 'quarta', 'quinta', 'sexta'];
+    const porDia = Math.ceil(todasCampanhas.length / 5);
 
-    trabalhos.forEach((demanda, index) => {
+    todasCampanhas.forEach((demanda, index) => {
       const diaIndex = Math.floor(index / porDia);
-      const dia = diasDisponiveis[Math.min(diaIndex, 3)];
+      const dia = diasDisponiveis[Math.min(diaIndex, 4)];
       dist[dia].push({ ...demanda, dia });
     });
 
@@ -194,11 +192,194 @@ export default function RelatoriosPage() {
     alert('Mensagem copiada para a área de transferência!');
   };
 
+  // Baixar planejamento semanal em PDF
+  const baixarPDF = () => {
+    if (!distribuicao) return;
+
+    const printWindow = window.open('', '_blank');
+    if (!printWindow) return;
+
+    const html = `
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <meta charset="UTF-8">
+        <title>Planejamento Semanal</title>
+        <style>
+          @page { size: A4; margin: 20mm; }
+          * { margin: 0; padding: 0; box-sizing: border-box; }
+          body {
+            font-family: Arial, sans-serif;
+            background: white;
+            color: #1a1a1a;
+            padding: 30px;
+          }
+          h1 {
+            text-align: center;
+            color: #6b21a8;
+            margin-bottom: 10px;
+            font-size: 28px;
+          }
+          .subtitle {
+            text-align: center;
+            color: #666;
+            margin-bottom: 30px;
+            font-size: 14px;
+          }
+          .semana-grid {
+            display: grid;
+            grid-template-columns: repeat(5, 1fr);
+            gap: 15px;
+            margin-bottom: 30px;
+          }
+          .dia-card {
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            padding: 12px;
+            break-inside: avoid;
+          }
+          .dia-card.segunda { border-color: #3b82f6; background: #eff6ff; }
+          .dia-card.terca { border-color: #8b5cf6; background: #f5f3ff; }
+          .dia-card.quarta { border-color: #ec4899; background: #fdf2f8; }
+          .dia-card.quinta { border-color: #10b981; background: #ecfdf5; }
+          .dia-card.sexta { border-color: #f97316; background: #fff7ed; }
+          .dia-titulo {
+            font-weight: bold;
+            margin-bottom: 5px;
+            font-size: 16px;
+          }
+          .dia-subtitulo {
+            font-size: 11px;
+            color: #666;
+            margin-bottom: 10px;
+          }
+          .demanda-item {
+            background: white;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            padding: 8px;
+            margin-bottom: 8px;
+            font-size: 12px;
+          }
+          .demanda-texto {
+            font-weight: 500;
+            color: #1a1a1a;
+            margin-bottom: 3px;
+          }
+          .demanda-tipo {
+            font-size: 10px;
+            color: #666;
+            text-transform: capitalize;
+          }
+          .empty-message {
+            text-align: center;
+            color: #999;
+            font-size: 11px;
+            font-style: italic;
+          }
+          .footer {
+            margin-top: 30px;
+            text-align: center;
+            color: #999;
+            font-size: 11px;
+            border-top: 1px solid #e0e0e0;
+            padding-top: 15px;
+          }
+          @media print {
+            body { padding: 10px; }
+            .semana-grid { gap: 10px; }
+          }
+        </style>
+      </head>
+      <body>
+        <h1>📅 Planejamento Semanal</h1>
+        <div class="subtitle">Relatório gerado em ${new Date().toLocaleDateString('pt-BR', { 
+          day: '2-digit', 
+          month: 'long', 
+          year: 'numeric' 
+        })}</div>
+        
+        <div class="semana-grid">
+          <div class="dia-card segunda">
+            <div class="dia-titulo">Segunda-feira</div>
+            <div class="dia-subtitulo">Briefing e Criação</div>
+            ${distribuicao.segunda.length > 0 ? distribuicao.segunda.map(d => `
+              <div class="demanda-item">
+                <div class="demanda-texto">${d.texto}</div>
+                <div class="demanda-tipo">${d.tipo === 'reativacao' ? 'Reativação' : d.tipo}</div>
+              </div>
+            `).join('') : '<div class="empty-message">Nenhuma demanda</div>'}
+          </div>
+
+          <div class="dia-card terca">
+            <div class="dia-titulo">Terça-feira</div>
+            <div class="dia-subtitulo">Início das Criações</div>
+            ${distribuicao.terca.length > 0 ? distribuicao.terca.map(d => `
+              <div class="demanda-item">
+                <div class="demanda-texto">${d.texto}</div>
+                <div class="demanda-tipo">${d.tipo === 'reativacao' ? 'Reativação' : d.tipo}</div>
+              </div>
+            `).join('') : '<div class="empty-message">Nenhuma demanda</div>'}
+          </div>
+
+          <div class="dia-card quarta">
+            <div class="dia-titulo">Quarta-feira</div>
+            <div class="dia-subtitulo">Continuação</div>
+            ${distribuicao.quarta.length > 0 ? distribuicao.quarta.map(d => `
+              <div class="demanda-item">
+                <div class="demanda-texto">${d.texto}</div>
+                <div class="demanda-tipo">${d.tipo === 'reativacao' ? 'Reativação' : d.tipo}</div>
+              </div>
+            `).join('') : '<div class="empty-message">Nenhuma demanda</div>'}
+          </div>
+
+          <div class="dia-card quinta">
+            <div class="dia-titulo">Quinta-feira</div>
+            <div class="dia-subtitulo">Continuação</div>
+            ${distribuicao.quinta.length > 0 ? distribuicao.quinta.map(d => `
+              <div class="demanda-item">
+                <div class="demanda-texto">${d.texto}</div>
+                <div class="demanda-tipo">${d.tipo === 'reativacao' ? 'Reativação' : d.tipo}</div>
+              </div>
+            `).join('') : '<div class="empty-message">Nenhuma demanda</div>'}
+          </div>
+
+          <div class="dia-card sexta">
+            <div class="dia-titulo">Sexta-feira</div>
+            <div class="dia-subtitulo">Finalização</div>
+            ${distribuicao.sexta.length > 0 ? distribuicao.sexta.map(d => `
+              <div class="demanda-item">
+                <div class="demanda-texto">${d.texto}</div>
+                <div class="demanda-tipo">${d.tipo === 'reativacao' ? 'Reativação' : d.tipo}</div>
+              </div>
+            `).join('') : '<div class="empty-message">Nenhuma demanda</div>'}
+          </div>
+        </div>
+
+        <div class="footer">
+          Relatório Semanal - Sistema de Gestão de Demandas
+        </div>
+
+        <script>
+          window.onload = function() {
+            setTimeout(function() {
+              window.print();
+              setTimeout(function() {
+                window.close();
+              }, 100);
+            }, 500);
+          };
+        </script>
+      </body>
+      </html>
+    `;
+
+    printWindow.document.write(html);
+    printWindow.document.close();
+  };
+
   const contadores = {
-    sazonais: demandas.filter(d => d.tipo === 'sazonal').reduce((total, d) => {
-      // Se são jogos separados, conta como 2 campanhas, senão conta como 1
-      return total + (d.jogosSeparados ? 2 : 1);
-    }, 0),
+    sazonais: demandas.filter(d => d.tipo === 'sazonal').length,
     reativacoes: demandas.filter(d => d.tipo === 'reativacao').length,
     copys: demandas.filter(d => d.tipo === 'copy').length
   };
@@ -224,7 +405,7 @@ export default function RelatoriosPage() {
           <div className="bg-gray-800/50 backdrop-blur-sm rounded-xl p-6 shadow-lg border border-purple-500/30 hover:border-purple-500/50 transition-all">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm text-gray-400">Sazonais</p>
+                <p className="text-sm text-gray-400">Sazonais (2 jogos cada)</p>
                 <p className="text-3xl font-bold text-purple-400">
                   {contadores.sazonais}/7
                 </p>
@@ -345,26 +526,6 @@ export default function RelatoriosPage() {
                     className="w-full px-4 py-3 bg-gray-700/50 border border-gray-600 text-white rounded-lg focus:outline-none focus:border-purple-500 focus:ring-2 focus:ring-purple-500/20 transition-all placeholder-gray-400"
                   />
                 </div>
-              </div>
-            )}
-
-            {/* Jogos Separados ou Juntos */}
-            {tipoDemanda === 'sazonal' && jogoPrincipal && jogoDownsell && (
-              <div className="flex items-center gap-3 p-4 bg-gray-700/30 rounded-lg border border-gray-600">
-                <input
-                  type="checkbox"
-                  id="jogosSeparados"
-                  checked={jogosSeparados}
-                  onChange={(e) => setJogosSeparados(e.target.checked)}
-                  className="w-5 h-5 text-purple-600 bg-gray-700 border-gray-600 rounded focus:ring-purple-500 focus:ring-2"
-                />
-                <label htmlFor="jogosSeparados" className="text-sm text-gray-300">
-                  <span className="font-medium">Jogos separados</span> (conta como 2 campanhas de 1 dia cada)
-                  <br />
-                  <span className="text-xs text-gray-400">
-                    Desmarcado: 1 campanha com 2 jogos (Principal + Downsell)
-                  </span>
-                </label>
               </div>
             )}
 
@@ -513,15 +674,25 @@ export default function RelatoriosPage() {
         {distribuicao && (
           <div className="bg-gray-800/50 backdrop-blur-sm rounded-2xl shadow-xl p-8 border border-gray-700/50">
             <div className="flex items-center justify-between mb-6">
-              <h2 className="text-2xl font-bold text-white">
+              <h2 className="text-2xl font-bold text-white flex items-center gap-2">
+                <Calendar className="w-6 h-6 text-green-400" />
                 Planejamento Semanal
               </h2>
-              <button
-                onClick={resetarSemana}
-                className="bg-gradient-to-r from-red-600 to-orange-600 text-white px-6 py-3 rounded-lg font-medium hover:shadow-lg hover:shadow-red-500/50 transition-all"
-              >
-                Resetar Semana
-              </button>
+              <div className="flex gap-3">
+                <button
+                  onClick={baixarPDF}
+                  className="flex items-center gap-2 bg-gradient-to-r from-green-600 to-green-700 text-white px-6 py-3 rounded-lg font-medium hover:shadow-lg hover:shadow-green-500/50 transition-all"
+                >
+                  <Download className="w-5 h-5" />
+                  Baixar PDF
+                </button>
+                <button
+                  onClick={resetarSemana}
+                  className="bg-gradient-to-r from-red-600 to-orange-600 text-white px-6 py-3 rounded-lg font-medium hover:shadow-lg hover:shadow-red-500/50 transition-all"
+                >
+                  Resetar Semana
+                </button>
+              </div>
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
