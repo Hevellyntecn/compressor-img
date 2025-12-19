@@ -56,7 +56,6 @@ export default function CalculosPage() {
     { codigo: 891, nome: '888 Gold', ganhoMaximo: 'R$ 100,00', multiplicador: '2.000', custoRodada: 0.05, dono: 'Pragmatic Play', descricao: '891 - 888 Gold - R$ 0,05 - Pragmatic Play' },
   ];
 
-  const jogosFiltrados = jogos.filter(jogo => 
   useEffect(() => {
     if (jogoSelecionado) {
       calcularTodasOfertas();
@@ -88,7 +87,16 @@ export default function CalculosPage() {
     });
 
     setOfertas(novasOfertas);
-  };white px-4">
+  };
+
+  const atualizarValor = (index: number, novoValor: number) => {
+    const novosValores = [...valoresPersonalizados];
+    novosValores[index] = novoValor;
+    setValoresPersonalizados(novosValores);
+  };
+
+  return (
+    <div className="min-h-screen py-8 bg-white px-4">
       <div className="max-w-7xl mx-auto">
         {/* Guia de cores */}
         <div className="mb-6 border border-gray-300">
@@ -204,15 +212,7 @@ export default function CalculosPage() {
             <p className="text-sm text-blue-800">
               <Calculator className="w-4 h-4 inline mr-2" />
               Selecione um jogo para começar a calcular os giros extras
-            </p/p>
-              </div>
-              <div className="bg-gray-700/30 rounded-lg p-4">
-                <p className="text-gray-400 text-sm">Custo Total</p>
-                <p className="text-green-400 font-bold text-2xl">
-                  R$ {ofertas.reduce((sum, o) => sum + o.custo, 0).toFixed(2)}
-                </p>
-              </div>
-            </div>
+            </p>
           </div>
         )}
       </div>
