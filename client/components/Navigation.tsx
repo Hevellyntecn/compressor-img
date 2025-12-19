@@ -10,7 +10,8 @@ import {
   Settings, 
   Download,
   Sparkles,
-  Calendar
+  Calendar,
+  Calculator
 } from 'lucide-react';
 
 const Navigation: React.FC = () => {
@@ -34,6 +35,12 @@ const Navigation: React.FC = () => {
       href: '/relatorios',
       icon: Calendar,
       description: 'Gerenciar demandas semanais'
+    },
+    {
+      name: 'Cálculos',
+      href: '/calculos',
+      icon: Calculator,
+      description: 'Calcular investimentos Cactus'
     },
     {
       name: 'Configurações',

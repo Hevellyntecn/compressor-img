@@ -139,8 +139,7 @@ export default function RelatoriosPage() {
     const dataFormatada = hoje.toLocaleDateString('pt-BR');
     const horaFormatada = hoje.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
 
-    let mensagem = `[${horaFormatada}, ${dataFormatada}] Bom dia! Muito obrigada\n`;
-    mensagem += `[${horaFormatada}, ${dataFormatada}] Pessoal, segue nossa programação para hoje:\n\n`;
+    let mensagem = `Bom dia! Muito obrigada Pessoal, segue nossa programação para hoje:\n\n`;
 
     // Campanhas Sazonais
     const sazonais = demandas.filter(d => d.tipo === 'sazonal' && !d.concluida);
