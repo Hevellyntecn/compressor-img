@@ -9,7 +9,8 @@ import {
   Zap, 
   Settings, 
   Download,
-  Sparkles 
+  Sparkles,
+  Calendar
 } from 'lucide-react';
 
 const Navigation: React.FC = () => {
@@ -27,6 +28,12 @@ const Navigation: React.FC = () => {
       href: '/converter',
       icon: FileText,
       description: 'Converter documentos'
+    },
+    {
+      name: 'Relatórios',
+      href: '/relatorios',
+      icon: Calendar,
+      description: 'Gerenciar demandas semanais'
     },
     {
       name: 'Configurações',
